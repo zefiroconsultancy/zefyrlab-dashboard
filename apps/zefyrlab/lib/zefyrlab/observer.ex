@@ -18,7 +18,7 @@ defmodule Zefyrlab.Observer do
   @callback handle_new_block(block :: map(), state :: term()) ::
               {:noreply, new_state :: term()} | {:stop, reason :: term(), new_state :: term()}
 
-  @pubsub_topic "Zefyrlab:blocks"
+  @pubsub_topic "zefyrlab:blocks"
 
   def pubsub_topic, do: @pubsub_topic
 
