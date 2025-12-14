@@ -13,7 +13,8 @@ defmodule Zefyrlab.Application do
       {Task.Supervisor, name: Zefyrlab.TaskSupervisor},
       Zefyrlab.Node,
       Zefyrlab.Repo,
-      Zefyrlab.NetworkMetrics
+      Zefyrlab.NetworkMetrics,
+      Zefyrlab.Treasury
     ]
 
     opts = [strategy: :one_for_one, name: Zefyrlab.Supervisor]

@@ -26,6 +26,8 @@ defmodule Rujira.Thorchain do
   alias Thorchain.Types.QueryMimirValuesRequest
   alias Thorchain.Types.QueryMimirValuesResponse
   alias Thorchain.Types.QueryNetworkRequest
+  alias Thorchain.Types.QueryNodeRequest
+  alias Thorchain.Types.QueryNodeResponse
   alias Thorchain.Types.QueryOraclePriceRequest
   alias Thorchain.Types.QueryOutboundFeesRequest
   alias Thorchain.Types.QueryOutboundFeesResponse
@@ -170,6 +172,26 @@ defmodule Rujira.Thorchain do
     |> Map.update(:dynamic_multiplier_basis_points, nil, &maybe_to_integer/1)
   end
 
+  defp cast_node_info(node_info) do
+    node_info
+    |> Map.update(:total_bond, "0", &String.to_integer/1)
+    |> Map.update(:current_award, "0", &String.to_integer/1)
+    |> Map.update(:bond_providers, nil, &cast_bond_providers/1)
+  end
+
+  defp cast_bond_providers(nil), do: nil
+
+  defp cast_bond_providers(bond_providers) do
+    bond_providers
+    |> Map.update(:node_operator_fee, "0", &String.to_integer/1)
+    |> Map.update(:providers, [], fn providers -> Enum.map(providers, &cast_bond_provider/1) end)
+  end
+
+  defp cast_bond_provider(provider) do
+    provider
+    |> Map.update(:bond, "0", &String.to_integer/1)
+  end
+
   defp maybe_to_integer(""), do: nil
   defp maybe_to_integer(str), do: String.to_integer(str)
   defp maybe_string(""), do: nil
@@ -258,9 +280,8 @@ defmodule Rujira.Thorchain do
   def oracle_price(symbol) do
     with {:ok, %{price: %{price: price}}} <-
            Rujira.Node.query(
-             &Q.oracle_price/3,
-             %QueryOraclePriceRequest{symbol: symbol},
-             []
+             &Q.oracle_price/2,
+             %QueryOraclePriceRequest{symbol: symbol}
            ) do
       {:ok, Decimal.new(price)}
     end
@@ -328,5 +349,11 @@ defmodule Rujira.Thorchain do
 
   def network() do
     Rujira.Node.query(&Q.network/3, %QueryNetworkRequest{}, [])
+  end
+
+  def node_info(address) do
+    with {:ok, %QueryNodeResponse{} = node_info} <- Rujira.Node.query(&Q.node/2, %QueryNodeRequest{address: address}) do
+      {:ok, cast_node_info(node_info)}
+    end
   end
 end
