@@ -19,7 +19,8 @@ defmodule ZefyrlabWeb.Router do
   scope "/", ZefyrlabWeb do
     pipe_through [:browser, :require_authenticated]
 
-    live_session :authenticated, on_mount: [{MagicAuth, :require_authenticated}] do
+    live_session :authenticated,
+      on_mount: [{MagicAuth, :require_authenticated}, {ZefyrlabWeb.Layouts, :default}] do
       live "/", DashboardLive.Index, :index
     end
   end

@@ -13,6 +13,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-plex-sans)"],
+        mono: ["var(--font-plex-mono)"],
+      },
       colors: {
         brand: "#FD4F00",
       }

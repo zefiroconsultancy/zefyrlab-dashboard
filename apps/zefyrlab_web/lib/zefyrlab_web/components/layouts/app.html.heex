@@ -1,1 +1,56 @@
-<%= @inner_content %>
+<header class="dashboard-nav">
+  <div class="container">
+    <div class="nav-content">
+      <div class="nav-left">
+        <h1 class="nav-title">
+          <span class="nav-title-zefyr">ZEFYR</span> LAB
+        </h1>
+        <span class="nav-user" :if={assigns[:current_user_email]}>
+          <%= @current_user_email %>
+        </span>
+      </div>
+      <div class="nav-right">
+        <.link
+          href={~p"/auth/log_out"}
+          method="delete"
+          class="logout-btn"
+        >
+          Log out
+        </.link>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="dashboard-container">
+  <%= if msg = Phoenix.Flash.get(@flash, :info) do %>
+    <div class="container">
+      <div class="alert alert-info" role="alert">
+        <%= msg %>
+      </div>
+    </div>
+  <% end %>
+
+  <%= if msg = Phoenix.Flash.get(@flash, :error) do %>
+    <div class="container">
+      <div class="alert alert-error" role="alert">
+        <%= msg %>
+      </div>
+    </div>
+  <% end %>
+
+  <%= @inner_content %>
+</main>
+
+<footer class="dashboard-footer">
+  <div class="container">
+    <div class="footer-content">
+      <div class="footer-left">
+        <p>&copy; <%= Date.utc_today().year %> Zefyr Labs. All rights reserved.</p>
+      </div>
+      <div class="footer-right">
+        <p class="disclaimer">Informational only. Not an offer to sell or solicit digital assets; not financial, investment, legal, or tax advice.</p>
+      </div>
+    </div>
+  </div>
+</footer>
