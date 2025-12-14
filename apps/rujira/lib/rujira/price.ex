@@ -77,4 +77,20 @@ defmodule Rujira.Price do
       {:ok, book.center}
     end
   end
+
+  def value_usd(symbol, amount, decimals \\ 8) do
+    case get(symbol) do
+      {:ok, %{current: price}} ->
+        amount
+        |> Decimal.new()
+        |> Decimal.mult(price)
+        |> Decimal.mult(Decimal.new(10 ** 8))
+        |> Decimal.div(Decimal.new(10 ** decimals))
+        |> Decimal.round(0, :floor)
+        |> Decimal.to_integer()
+
+      _ ->
+        0
+    end
+  end
 end

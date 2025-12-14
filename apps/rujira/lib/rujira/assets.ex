@@ -294,6 +294,21 @@ defmodule Rujira.Assets do
     end
   end
 
+  def parse_asset(<<>>), do: {:error, :invalid_asset}
+
+  def parse_asset(asset_str) do
+    case String.split(asset_str, " ", parts: 2) do
+      [amount_str, asset] ->
+        case Integer.parse(amount_str) do
+          {amt, _} -> {:ok, {asset, amt}}
+          :error -> {:error, :invalid_amount}
+        end
+
+      _ ->
+        {:error, :invalid_asset}
+    end
+  end
+
   def load_metadata(%Asset{type: :native} = asset) do
     with {:ok, metadata} <- Metadata.load_metadata(asset) do
       {:ok, %{metadata | decimals: decimals(asset)}}
