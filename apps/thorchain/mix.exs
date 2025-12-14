@@ -25,7 +25,7 @@ defmodule Thorchain.MixProject do
   defp deps do
     [
       {:protobuf, "~> 0.14.0"},
-      {:grpc, "~> 0.9"}
+      {:grpc, "~> 0.11.5"}
     ]
   end
 end

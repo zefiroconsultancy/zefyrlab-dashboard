@@ -20,7 +20,7 @@ defmodule Cosmos.MixProject do
     [
       # External dependencies (versions controlled by umbrella)
       {:protobuf, "~> 0.14.0"},
-      {:grpc, "~> 0.9"},
+      {:grpc, "~> 0.11.5"},
       {:ex_secp256k1, "~> 0.7.6"},
       {:jason, "~> 1.2"},
       {:google_protos, "~> 0.4"},

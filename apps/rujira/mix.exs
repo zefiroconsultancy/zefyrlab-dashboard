@@ -39,7 +39,7 @@ defmodule Rujira.MixProject do
       {:thorchain, in_umbrella: true},
       # External dependencies (versions controlled by umbrella)
       {:google_protos, "~> 0.4"},
-      {:grpc, "~> 0.9"},
+      {:grpc, "~> 0.11.5"},
       {:jason, "~> 1.2"},
       {:protobuf, "~> 0.14.0"},
       {:yaml_elixir, "~> 2.11.0"},

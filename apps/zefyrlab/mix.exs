@@ -36,7 +36,7 @@ defmodule Zefyrlab.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ecto_sql, "~> 3.10"},
       {:google_protos, "~> 0.4"},
-      {:grpc, "~> 0.9"},
+      {:grpc, "~> 0.11.5"},
       {:jason, "~> 1.2"},
       {:memoize, "~> 1.4"},
       {:mox, "~> 1.2"},

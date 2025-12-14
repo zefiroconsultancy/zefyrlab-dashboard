@@ -20,7 +20,7 @@ defmodule Cosmwasm.MixProject do
     [
       # External dependencies (versions controlled by umbrella)
       {:protobuf, "~> 0.14.0"},
-      {:grpc, "~> 0.9"}
+      {:grpc, "~> 0.11.5"}
     ]
   end
 end
