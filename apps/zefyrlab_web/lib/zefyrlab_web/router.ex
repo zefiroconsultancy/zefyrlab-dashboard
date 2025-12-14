@@ -2,8 +2,7 @@ defmodule ZefyrlabWeb.Router do
   use ZefyrlabWeb, :router
 
   use MagicAuth.Router
-  # generates /sessions/log_in, /sessions/password, /sessions/verify, /sessions/log_out, etc.
-  magic_auth("/auth", signed_in: "/")
+  magic_auth("/auth", signed_in: "/", log_in: "/signup")
 
   pipeline :browser do
     plug :accepts, ["html"]
