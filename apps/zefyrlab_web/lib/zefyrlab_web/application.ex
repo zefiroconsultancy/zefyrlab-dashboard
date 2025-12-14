@@ -8,7 +8,6 @@ defmodule ZefyrlabWeb.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      Zefyrlab.Repo,
       ZefyrlabWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:zefyrlab_web, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: ZefyrlabWeb.PubSub},
