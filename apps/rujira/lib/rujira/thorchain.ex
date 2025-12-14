@@ -47,7 +47,7 @@ defmodule Rujira.Thorchain do
     }
 
     with {:ok, %QueryPoolsResponse{pools: pools}} <-
-           Rujira.Node.query(&Q.pools/3, req, []) do
+           Rujira.Node.query(&Q.pools/2, req) do
       {:ok, Enum.map(pools, &cast_pool/1)}
     end
   end
@@ -146,9 +146,6 @@ defmodule Rujira.Thorchain do
     |> Map.update(:synth_units, "0", &String.to_integer/1)
     |> Map.update(:savers_units, "0", &String.to_integer/1)
     |> Map.update(:savers_capacity_remaining, "0", &String.to_integer/1)
-    |> Map.update(:loan_collateral, "0", &String.to_integer/1)
-    |> Map.update(:loan_collateral_remaining, "0", &String.to_integer/1)
-    |> Map.update(:loan_cr, "0", &String.to_integer/1)
   end
 
   defp cast_inbound_address(x) do
