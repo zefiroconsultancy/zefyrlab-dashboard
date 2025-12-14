@@ -25,6 +25,13 @@ defmodule ZefyrlabWeb.Router do
     end
   end
 
+  # Catch-all 404 for authenticated scope
+  scope "/", ZefyrlabWeb do
+    pipe_through [:browser]
+
+    match :*, "/*path", FallbackController, :not_found
+  end
+
   if Application.compile_env(:zefyrlab_web, :dev_routes) do
     import Phoenix.LiveDashboard.Router
 

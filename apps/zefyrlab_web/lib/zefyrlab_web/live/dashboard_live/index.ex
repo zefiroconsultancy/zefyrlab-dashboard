@@ -1,6 +1,7 @@
 defmodule ZefyrlabWeb.DashboardLive.Index do
   use ZefyrlabWeb, :live_view
   import ZefyrlabWeb.DashboardComponents
+  alias Zefyrlab.Dashboard
 
   @impl true
   def mount(_params, session, socket) do
@@ -24,34 +25,72 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
   end
 
   @impl true
-  def handle_event("change_year", %{"value" => year}, socket) do
+  def handle_event("change_year", %{"selected" => year}, socket) do
+    case safe_integer(year) do
+      nil ->
+        {:noreply, socket}
+
+      parsed_year ->
+        {:noreply,
+         socket
+         |> assign(:selected_year, parsed_year)
+         |> load_projections()}
+    end
+  end
+
+  @impl true
+  def handle_event("change_scenario", %{"selected" => scenario}, socket) do
+    if scenario == "" do
+      {:noreply, socket}
+    else
+      {:noreply,
+       socket
+       |> assign(:selected_scenario, scenario)
+       |> load_projections()}
+    end
+  end
+
+  @impl true
+  def handle_event("change_growth_factor", %{"selected" => factor}, socket) do
+    parsed = safe_float(factor) || socket.assigns.growth_factor
+
     {:noreply,
      socket
-     |> assign(:selected_year, String.to_integer(year))
+     |> assign(:growth_factor, parsed)
      |> load_projections()}
   end
 
   @impl true
-  def handle_event("change_scenario", %{"value" => scenario}, socket) do
+  def handle_event(
+        "change_growth_factor",
+        %{"projection" => %{"growth_factor" => factor}},
+        socket
+      ) do
+    parsed = safe_float(factor) || socket.assigns.growth_factor
+
     {:noreply,
      socket
-     |> assign(:selected_scenario, scenario)
+     |> assign(:growth_factor, parsed)
      |> load_projections()}
   end
 
   @impl true
   def handle_event("change_growth_factor", %{"value" => factor}, socket) do
+    parsed = safe_float(factor) || socket.assigns.growth_factor
+
     {:noreply,
      socket
-     |> assign(:growth_factor, String.to_float(factor))
+     |> assign(:growth_factor, parsed)
      |> load_projections()}
   end
 
   @impl true
-  def handle_event("change_time_range", %{"value" => time_range}, socket) do
+  def handle_event("change_time_range", %{"selected" => time_range}, socket) do
+    effective_range = if time_range == "" or is_nil(time_range), do: "all_time", else: time_range
+
     {:noreply,
      socket
-     |> assign(:time_range, time_range)
+     |> assign(:time_range, effective_range)
      |> assign_chart_data()}
   end
 
@@ -61,98 +100,58 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
   end
 
   defp load_metrics(socket) do
-    # For now, use placeholder data
-    # TODO: Replace with actual Zefyrlab.Metrics.get_current_day()
+    metrics = Dashboard.metrics()
+
     socket
-    |> assign(:current_capital, "1,234,567")
-    |> assign(:total_bonded, "987,654")
-    |> assign(:rewards_ytd, "$123,456")
-    |> assign(:annualized_yield, "12.5%")
-    |> assign(:current_valuation, "$2,345,678")
+    |> assign(:current_capital, metrics.current_capital)
+    |> assign(:total_bonded, metrics.total_bonded)
+    |> assign(:rewards_ytd, metrics.rewards_ytd)
+    |> assign(:annualized_yield, metrics.annualized_yield)
+    |> assign(:current_valuation, metrics.current_valuation)
     |> assign_chart_data()
   end
 
   defp assign_chart_data(socket) do
-    # Mock chart data - TODO: Replace with actual data from Zefyrlab
-    time_range = socket.assigns.time_range
-
-    {labels, bonded_values, rewards_actual, rewards_proj, income_values, costs_values} =
-      case time_range do
-        "30_days" ->
-          {
-            ["Day 1", "Day 5", "Day 10", "Day 15", "Day 20", "Day 25", "Day 30"],
-            [1_450_000, 1_460_000, 1_470_000, 1_480_000, 1_490_000, 1_495_000, 1_500_000],
-            [19_500, 20_100, 20_800, 21_400, 22_000, 22_600, 23_200],
-            [19_000, 20_000, 20_500, 21_000, 21_500, 22_000, 22_500],
-            [190_000, 195_000, 200_000, 205_000, 210_000, 213_000, 215_100],
-            [12_000, 12_500, 13_000, 13_500, 14_000, 14_500, 15_000]
-          }
-
-        "90_days" ->
-          {
-            ["Week 1", "Week 3", "Week 5", "Week 7", "Week 9", "Week 11", "Week 13"],
-            [1_300_000, 1_350_000, 1_390_000, 1_425_000, 1_460_000, 1_480_000, 1_500_000],
-            [15_300, 17_200, 18_900, 20_300, 21_800, 22_600, 23_800],
-            [15_000, 17_000, 18_500, 20_000, 21_500, 22_000, 23_500],
-            [160_000, 175_000, 188_000, 198_000, 206_000, 211_000, 215_100],
-            [10_500, 11_500, 12_500, 13_200, 14_000, 14_700, 15_000]
-          }
-
-        "all_time" ->
-          {
-            ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-            [850_000, 920_000, 980_000, 1_050_000, 1_100_000, 1_180_000,
-             1_250_000, 1_300_000, 1_350_000, 1_400_000, 1_450_000, 1_500_000],
-            [12_500, 13_200, 14_100, 15_300, 16_200, 17_800,
-             18_900, 19_500, 20_100, 21_200, 22_500, 23_800],
-            [12_000, 13_000, 14_000, 15_000, 16_000, 17_500,
-             18_500, 19_000, 20_000, 21_000, 22_000, 23_500],
-            [12_500, 25_700, 39_800, 55_100, 71_300, 89_100,
-             108_000, 127_500, 147_600, 168_800, 191_300, 215_100],
-            [8_500, 9_200, 9_800, 10_500, 11_000, 11_800,
-             12_500, 13_000, 13_500, 14_000, 14_500, 15_000]
-          }
-      end
-
-    bonded_data = %{labels: labels, data: bonded_values}
-    rewards_data = %{labels: labels, actual: rewards_actual, projected: rewards_proj}
-    income_data = %{labels: labels, data: income_values}
-    costs_data = %{labels: labels, data: costs_values}
+    chart_data = Dashboard.chart_data(socket.assigns.time_range)
 
     socket
-    |> assign(:bonded_chart_data, Jason.encode!(bonded_data))
-    |> assign(:rewards_chart_data, Jason.encode!(rewards_data))
-    |> assign(:income_chart_data, Jason.encode!(income_data))
-    |> assign(:costs_chart_data, Jason.encode!(costs_data))
+    |> assign(:bonded_chart_data, Jason.encode!(chart_data.bonded))
+    |> assign(:rewards_chart_data, Jason.encode!(chart_data.rewards))
+    |> assign(:income_chart_data, Jason.encode!(chart_data.income))
+    |> assign(:costs_chart_data, Jason.encode!(chart_data.costs))
   end
 
   defp load_projections(socket) do
-    # For now, use placeholder data
-    # TODO: Replace with actual Zefyrlab.Projections.get_by_scenario_year()
-    year = socket.assigns.selected_year
-    scenario = socket.assigns.selected_scenario
-    factor = socket.assigns.growth_factor
-
-    projected_value = (2_500_000 * factor) |> round() |> format_number()
+    %{projected_valuation: projected_value, subtitle: subtitle} =
+      Dashboard.projection(
+        socket.assigns.selected_year,
+        socket.assigns.selected_scenario,
+        socket.assigns.growth_factor
+      )
 
     socket
-    |> assign(:projected_valuation, "$#{projected_value}")
-    |> assign(:projection_subtitle, "#{year} · #{format_scenario(scenario)}")
+    |> assign(:projected_valuation, projected_value)
+    |> assign(:projection_subtitle, subtitle)
   end
 
-  defp format_scenario("base_case"), do: "Base Case"
-  defp format_scenario("upside_case"), do: "Upside"
-  defp format_scenario("conservative_case"), do: "Conservative"
-  defp format_scenario(_), do: "Unknown"
+  defp safe_integer(""), do: nil
+  defp safe_integer(nil), do: nil
 
-  defp format_number(num) when is_integer(num) do
-    num
-    |> Integer.to_string()
-    |> String.graphemes()
-    |> Enum.reverse()
-    |> Enum.chunk_every(3)
-    |> Enum.join(",")
-    |> String.reverse()
+  defp safe_integer(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {parsed, _} -> parsed
+      :error -> nil
+    end
+  end
+
+  defp safe_float(""), do: nil
+  defp safe_float(nil), do: nil
+
+  defp safe_float(value) when is_binary(value) do
+    case Float.parse(value) do
+      {parsed, _} -> parsed
+      :error -> nil
+    end
   end
 
   @impl true
@@ -192,16 +191,20 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
           />
 
           <div class="selector-group">
-            <label>Growth Factor: <%= @growth_factor %></label>
-            <input
-              type="range"
-              min="0.5"
-              max="2.0"
-              step="0.1"
-              value={@growth_factor}
-              phx-change="change_growth_factor"
-              style="width: 100%;"
-            />
+            <label>Growth Factor: <%= :erlang.float_to_binary(@growth_factor, decimals: 1) %></label>
+
+            <.form for={%{growth_factor: @growth_factor}} as={:projection} phx-change="change_growth_factor">
+              <input
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={@growth_factor}
+                name="projection[growth_factor]"
+                phx-debounce="0"
+                style="width: 100%;"
+              />
+            </.form>
           </div>
 
           <.large_metric value={@projected_valuation} subtitle={@projection_subtitle} />
@@ -221,19 +224,39 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
       <!-- Charts Section -->
       <div class="charts-grid">
         <.chart_card title="Bonded Capital Over Time" id="chart-bonded">
-          <canvas id="canvas-bonded" phx-hook="BondedChart" data-chart={@bonded_chart_data}></canvas>
+          <canvas
+            id="canvas-bonded"
+            class="w-full h-80 md:h-96"
+            phx-hook="BondedChart"
+            data-chart={@bonded_chart_data}
+          ></canvas>
         </.chart_card>
 
         <.chart_card title="Rewards: Actual vs Projected" id="chart-rewards">
-          <canvas id="canvas-rewards" phx-hook="RewardsChart" data-chart={@rewards_chart_data}></canvas>
+          <canvas
+            id="canvas-rewards"
+            class="w-full h-80 md:h-96"
+            phx-hook="RewardsChart"
+            data-chart={@rewards_chart_data}
+          ></canvas>
         </.chart_card>
 
         <.chart_card title="Cumulative Net Income" id="chart-income">
-          <canvas id="canvas-income" phx-hook="IncomeChart" data-chart={@income_chart_data}></canvas>
+          <canvas
+            id="canvas-income"
+            class="w-full h-80 md:h-96"
+            phx-hook="IncomeChart"
+            data-chart={@income_chart_data}
+          ></canvas>
         </.chart_card>
 
         <.chart_card title="Costs YTD" id="chart-costs">
-          <canvas id="canvas-costs" phx-hook="CostsChart" data-chart={@costs_chart_data}></canvas>
+          <canvas
+            id="canvas-costs"
+            class="w-full h-80 md:h-96"
+            phx-hook="CostsChart"
+            data-chart={@costs_chart_data}
+          ></canvas>
         </.chart_card>
       </div>
     </div>

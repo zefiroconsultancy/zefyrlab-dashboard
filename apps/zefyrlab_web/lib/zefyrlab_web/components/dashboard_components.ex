@@ -65,15 +65,20 @@ defmodule ZefyrlabWeb.DashboardComponents do
     ~H"""
     <div class="selector-group">
       <label><%= @label %></label>
+
       <div class="button-group">
-        <button
-          :for={option <- @options}
-          phx-click={@event}
-          phx-value-value={option}
-          class={if option == @selected, do: "active", else: ""}
-        >
-          <%= format_option(option) %>
-        </button>
+        <%= for option <- @options do %>
+          <% option_value = to_string(option) %>
+          <button
+            type="button"
+            phx-click={@event}
+            phx-value-selected={option_value}
+            class={if option_value == to_string(@selected), do: "active", else: ""}
+            aria-pressed={option_value == to_string(@selected)}
+          >
+            <%= format_option(option) %>
+          </button>
+        <% end %>
       </div>
     </div>
     """

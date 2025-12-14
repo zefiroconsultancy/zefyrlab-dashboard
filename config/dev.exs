@@ -22,7 +22,7 @@ config :zefyrlab_web, ZefyrlabWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4000],
   check_origin: false,
   code_reloader: true,
-  debug_errors: true,
+  debug_errors: false,
   secret_key_base: "og6PFWDxZ5wNxBwg3QkQoQki66WKyzLn6J2zqHMnvwbGdhpes2emk+fwV+DT2z2l",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:zefyrlab_web, ~w(--sourcemap=inline --watch)]},

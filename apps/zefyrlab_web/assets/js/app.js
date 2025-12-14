@@ -5,6 +5,7 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {MagicAuthHooks} from "magic_auth"
 import topbar from "../vendor/topbar"
+import Chart from "../vendor/chart.umd"
 
 // Chart Hooks - data comes from Elixir LiveView
 const ChartHooks = {
@@ -12,6 +13,7 @@ const ChartHooks = {
     mounted() {
       const chartData = JSON.parse(this.el.dataset.chart);
       const ctx = this.el.getContext('2d');
+      this.resizeCanvas();
 
       this.chart = new Chart(ctx, {
         type: 'line',
@@ -59,9 +61,16 @@ const ChartHooks = {
     },
     updated() {
       const chartData = JSON.parse(this.el.dataset.chart);
+      this.resizeCanvas();
       this.chart.data.labels = chartData.labels;
       this.chart.data.datasets[0].data = chartData.data;
       this.chart.update();
+    },
+    resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = this.el.getBoundingClientRect();
+      this.el.width = rect.width * dpr;
+      this.el.height = rect.height * dpr;
     }
   },
 
@@ -69,6 +78,7 @@ const ChartHooks = {
     mounted() {
       const chartData = JSON.parse(this.el.dataset.chart);
       const ctx = this.el.getContext('2d');
+      this.resizeCanvas();
 
       this.chart = new Chart(ctx, {
         type: 'bar',
@@ -120,10 +130,17 @@ const ChartHooks = {
     },
     updated() {
       const chartData = JSON.parse(this.el.dataset.chart);
+      this.resizeCanvas();
       this.chart.data.labels = chartData.labels;
       this.chart.data.datasets[0].data = chartData.actual;
       this.chart.data.datasets[1].data = chartData.projected;
       this.chart.update();
+    },
+    resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = this.el.getBoundingClientRect();
+      this.el.width = rect.width * dpr;
+      this.el.height = rect.height * dpr;
     }
   },
 
@@ -131,6 +148,7 @@ const ChartHooks = {
     mounted() {
       const chartData = JSON.parse(this.el.dataset.chart);
       const ctx = this.el.getContext('2d');
+      this.resizeCanvas();
 
       this.chart = new Chart(ctx, {
         type: 'line',
@@ -178,9 +196,16 @@ const ChartHooks = {
     },
     updated() {
       const chartData = JSON.parse(this.el.dataset.chart);
+      this.resizeCanvas();
       this.chart.data.labels = chartData.labels;
       this.chart.data.datasets[0].data = chartData.data;
       this.chart.update();
+    },
+    resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = this.el.getBoundingClientRect();
+      this.el.width = rect.width * dpr;
+      this.el.height = rect.height * dpr;
     }
   },
 
@@ -188,6 +213,7 @@ const ChartHooks = {
     mounted() {
       const chartData = JSON.parse(this.el.dataset.chart);
       const ctx = this.el.getContext('2d');
+      this.resizeCanvas();
 
       this.chart = new Chart(ctx, {
         type: 'bar',
@@ -232,9 +258,16 @@ const ChartHooks = {
     },
     updated() {
       const chartData = JSON.parse(this.el.dataset.chart);
+      this.resizeCanvas();
       this.chart.data.labels = chartData.labels;
       this.chart.data.datasets[0].data = chartData.data;
       this.chart.update();
+    },
+    resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = this.el.getBoundingClientRect();
+      this.el.width = rect.width * dpr;
+      this.el.height = rect.height * dpr;
     }
   }
 };
