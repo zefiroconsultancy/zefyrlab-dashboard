@@ -32,15 +32,25 @@ defmodule Zefyrlab.MixProject do
       {:thorchain, in_umbrella: true},
       {:rujira, in_umbrella: true},
       {:cosmos, in_umbrella: true},
+      {:bandit, "~> 1.5"},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ecto_sql, "~> 3.10"},
-      {:postgrex, ">= 0.0.0"},
+      {:google_protos, "~> 0.4"},
+      {:grpc, "~> 0.9"},
       {:jason, "~> 1.2"},
-      {:telemetry, "~> 1.0"},
       {:memoize, "~> 1.4"},
+      {:mox, "~> 1.2"},
+      {:phoenix, "~> 1.7.14"},
+      {:phoenix_ecto, "~> 4.5"},
+      {:poolboy, "~> 1.5.1"},
+      {:postgrex, ">= 0.0.0"},
+      {:protobuf, "~> 0.14.0"},
+      {:telemetry_metrics, "~> 1.0"},
+      {:telemetry_poller, "~> 1.0"},
+      {:websockex, "~> 0.4.3"},
       {:magic_auth, "~> 0.2.0"},
       {:swoosh, "~> 1.16"},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 

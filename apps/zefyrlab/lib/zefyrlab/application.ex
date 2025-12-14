@@ -8,7 +8,12 @@ defmodule Zefyrlab.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      {Phoenix.PubSub, name: Zefyrlab.PubSub}
+      {GRPC.Client.Supervisor, []},
+      {Phoenix.PubSub, name: Zefyrlab.PubSub},
+      {Task.Supervisor, name: Zefyrlab.TaskSupervisor},
+      Zefyrlab.Node,
+      Zefyrlab.Repo,
+      Zefyrlab.NetworkMetrics
     ]
 
     opts = [strategy: :one_for_one, name: Zefyrlab.Supervisor]
