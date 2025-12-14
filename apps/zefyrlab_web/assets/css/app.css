@@ -222,6 +222,81 @@ h1.logo-heading .logo-accent { color: var(--accent); }
 }
 
 /* ========================================
+   AUTH PAGES
+   ======================================== */
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-4) var(--s-3);
+  background: var(--bg);
+}
+
+.auth-logo {
+  font-family: var(--font-plex-mono);
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.auth-heading {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.auth-subheading,
+.auth-intro {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.auth-button {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 10px 25px -15px var(--accent);
+}
+
+.auth-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px -15px var(--accent);
+}
+
+.auth-minimal-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fff;
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.2s ease;
+}
+
+.auth-minimal-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(28, 126, 214, 0.12);
+}
+
+/* ========================================
    DASHBOARD STYLES
    ======================================== */
 

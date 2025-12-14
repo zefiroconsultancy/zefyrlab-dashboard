@@ -66,31 +66,22 @@ defmodule ZefyrlabWeb.MagicAuth do
   @impl true
   def log_in_form(assigns) do
     ~H"""
-    <.flash_group flash={@flash} />
-    <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div class="max-w-md w-full space-y-8">
-        <div class="-mt-32">
-          <%!-- <img
-            class="mx-auto h-32 w-32 border mb-12"
-            src="/images/logo.png"
-            alt={gettext("Your Company")}
-          /> --%>
-          <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {gettext("Sign in to your account")}
-          </h2>
-          <p class="mt-2 text-center text-sm text-gray-600">
-            {gettext("Enter your email to receive an access code")}
-          </p>
-        </div>
+    <div class="auth-shell">
+      <div style="width: 100%; max-width: 520px; display: grid; gap: var(--s-3); text-align: center;">
+        <h1 class="logo-heading" style="margin: 0;">
+          <span class="logo-accent">ZEFYR</span> LAB
+        </h1>
+        <p class="auth-subheading" style="margin: 0;">
+          {gettext("Enter your email to access the dashboard.")}
+        </p>
 
-        <.form for={@form} phx-change="validate" phx-submit="login" class="mt-8 space-y-6">
-          <.input field={@form[:email]} autocomplete="off" phx-debounce="500"/>
+        <.flash_group flash={@flash} form={@form} />
+
+        <.form for={@form} phx-change="validate" phx-submit="login" style="display: grid; gap: var(--s-2); text-align: left;">
+          <.input field={@form[:email]} autocomplete="off" phx-debounce="500" class="auth-minimal-input" />
           <div>
-            <button
-              type="submit"
-              class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              {gettext("Send log in code")}
+            <button type="submit" class="auth-button">
+              {gettext("Send login code")}
             </button>
           </div>
         </.form>
@@ -118,49 +109,43 @@ defmodule ZefyrlabWeb.MagicAuth do
   @impl true
   def verify_form(assigns) do
     ~H"""
-    <.flash_group flash={@flash} />
-    <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div class="max-w-md w-full space-y-8">
-        <div class="-mt-32">
-          <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {gettext("Enter verification code")}
-          </h2>
-          <p class="mt-2 text-center text-sm text-gray-600">
-            {gettext("Please enter the %{one_time_password_length}-digit code sent to your email",
-              one_time_password_length: MagicAuth.Config.one_time_password_length()
-            )}
-          </p>
-          <p class="text-center text-sm text-gray-900 font-medium">{@email}</p>
-        </div>
+    <div class="auth-shell">
+      <div style="width: 100%; max-width: 520px; display: grid; gap: var(--s-3); text-align: center;">
+        <h1 class="logo-heading" style="margin: 0;">
+          <span class="logo-accent">ZEFYR</span> LAB
+        </h1>
+        <p class="auth-subheading" style="margin: 0;">
+          {gettext("Check your email for the %{len}-digit code we sent to %{email}.",
+            len: MagicAuth.Config.one_time_password_length(),
+            email: @email
+          )}
+        </p>
 
-        <.form for={@form} phx-change="verify" class="mt-8 space-y-6">
-          <div class="rounded-md -space-y-px">
-            <div>
-              <.one_time_password_input field={@form[:password]} error={@error} />
-            </div>
+        <.flash_group flash={@flash} form={@form} />
+
+        <.form for={@form} phx-change="verify" style="display: grid; gap: var(--s-2); text-align: left;">
+          <div>
+            <.one_time_password_input field={@form[:password]} error={@error} />
           </div>
 
-          <div class="text-center">
-            <p class="text-sm text-gray-700 font-medium">
-              {gettext("Didn't receive the code?")}
-              <%= if @rate_limited? do %>
-                <p class="text-sm text-gray-600">
-                  {gettext("Please wait %{countdown} seconds to request a new code",
-                    countdown: @countdown
-                  )}
-                </p>
-              <% else %>
-                <div class="flex justify-center">
-                  <button
-                    type="button"
-                    phx-click="resend_code"
-                    class="font-medium text-sm text-indigo-600 hover:text-indigo-500"
-                  >
-                    {gettext("Resend")}
-                  </button>
-                </div>
-              <% end %>
-            </p>
+          <div style="text-align: center; display: grid; gap: 0.5rem; color: var(--muted);">
+            <p class="auth-subheading" style="margin: 0;">{gettext("Didn't receive the code?")}</p>
+            <%= if @rate_limited? do %>
+              <p class="auth-subheading" style="margin: 0;">
+                {gettext("Please wait %{countdown} seconds to request a new code",
+                  countdown: @countdown
+                )}
+              </p>
+            <% else %>
+              <button
+                type="button"
+                phx-click="resend_code"
+                class="auth-button"
+                style="width: auto; justify-self: center; padding: 10px 16px; min-width: 160px;"
+              >
+                {gettext("Resend code")}
+              </button>
+            <% end %>
           </div>
         </.form>
       </div>
