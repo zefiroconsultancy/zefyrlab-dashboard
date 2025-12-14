@@ -1660,7 +1660,7 @@ h1.logo-heading .logo-accent {
 }
 
 .dashboard-nav .nav-title {
-  font-size: 18px;
+  font-size: 30px;
   font-weight: 600;
   margin: 0;
 }
@@ -1857,6 +1857,12 @@ h1.logo-heading .logo-accent {
   border-color: var(--accent);
 }
 
+/* Time Range Selector */
+
+.time-range-selector {
+  margin-bottom: 24px;
+}
+
 /* Charts Section */
 
 .charts-grid {
@@ -1884,6 +1890,12 @@ h1.logo-heading .logo-accent {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
+}
+
+.chart-card canvas {
+  width: 100% !important;
+  height: 250px !important;
+  display: block;
 }
 
 .time-range-mini {

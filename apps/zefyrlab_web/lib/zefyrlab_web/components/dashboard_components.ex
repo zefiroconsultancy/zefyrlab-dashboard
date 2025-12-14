@@ -72,12 +72,18 @@ defmodule ZefyrlabWeb.DashboardComponents do
           phx-value-value={option}
           class={if option == @selected, do: "active", else: ""}
         >
-          <%= option %>
+          <%= format_option(option) %>
         </button>
       </div>
     </div>
     """
   end
+
+  defp format_option("30_days"), do: "Last 30 Days"
+  defp format_option("90_days"), do: "Last 90 Days"
+  defp format_option("all_time"), do: "All Time"
+  defp format_option(option) when is_binary(option), do: option
+  defp format_option(option), do: to_string(option)
 
   @doc """
   Renders a chart card container.
