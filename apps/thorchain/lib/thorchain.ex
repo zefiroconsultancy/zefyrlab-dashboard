@@ -25,7 +25,15 @@ defmodule Thorchain do
 
   defp cast_block_header(%BlockResponseHeader{chain_id: chain_id, height: height, time: time}) do
     {:ok, time, 0} = DateTime.from_iso8601(time)
-    %{chain_id: chain_id, height: height, time: time}
+
+    %{
+      chain_id: chain_id,
+      height: height,
+      time:
+        time
+        |> DateTime.to_unix(:microsecond)
+        |> DateTime.from_unix!(:microsecond)
+    }
   end
 
   defp cast_block_event(%BlockEvent{
