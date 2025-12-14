@@ -506,7 +506,6 @@ h1.logo-heading .logo-accent { color: var(--accent); }
 .dashboard-footer {
   margin-top: 64px;
   padding: 24px 0;
-  border-top: 1px solid var(--border);
 }
 
 .dashboard-footer .container {
