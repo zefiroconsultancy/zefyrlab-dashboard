@@ -1,0 +1,37 @@
+code: 43
+
+targets:
+  - id: ruji
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+      bond_denom: x/ruji
+      revenue_denom: eth-usdc-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+      revenue_converter: 
+        contract: ${targets:rujira-fin.ruji-eth-usdc}
+        msg: '{"swap": {}}'
+        min: "10000000"
+        
+  - id: nami
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+      bond_denom: thor.nami
+      revenue_denom: eth-usdc-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+      revenue_converter: 
+        contract: ${targets:rujira-fin.nami-eth-usdc}
+        msg: '{"swap": {}}'
+        min: "10000000"
+
+  - id: tcy
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    address: thor1z7ejlk5wk2pxh9nfwjzkkdnrq4p2f5rjcpudltv0gh282dwfz6nq9g2cr0
+    config:
+      bond_denom: tcy
+      revenue_denom: rune
+      revenue_converter: 
+        contract: ${targets:rujira-fin.tcy-rune}
+        msg: '{"swap": {}}'
+        min: "10000000"
+

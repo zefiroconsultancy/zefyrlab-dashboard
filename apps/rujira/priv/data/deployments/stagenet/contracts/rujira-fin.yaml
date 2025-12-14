@@ -1,0 +1,89 @@
+code: 710
+
+targets:
+  - id: bnb-eth-usdt
+    address: sthor155qttl6wvr48rmu8tkeke7npql5cxzss34d0g5374sqrpykm026q2eumtr
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: btc-eth-usdt
+    address: sthor1dp0mj9vr4jhgxxslcaxt62ykyknslp92hvd6cy3lpw4vzrmne40s8tsz4j
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: btc-eth-usdc
+    address: sthor1qz65htaxvqkdgufkuyfgh3drpvfkxgg6wtuunzxtze3umjlaavjsmpld0e
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: eth-btc
+    address: sthor1a0rd52adfxaupj6m2xshemhhygr80ygwyhjcemxqzhhwwy40f8tsp0hu6a
+    admin: ${accounts:dao}
+    creator: ${accounts:creator}
+    config:
+  - id: eth-eth-usdc
+    address: sthor1w90kxcvn42dmzgsx55u6lvrmzvz0t4ch0q90r84fu6agctzapjxskug7ge
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+
+  - id: eth-eth-usdt
+    address: sthor1p682xwprusuzm4slk3wjqvvek8kqtg9sqdx9z7wr3d3huxke2hts9xnhf5
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: eth-usdt-eth-usdc
+    address: sthor1c4fk6agzasl98whx96sfc5cenucdwhf8e47tw0j2gl2t0tcp6kvq0z4msa
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: bsc-usdt-eth-usdt
+    address: sthor1ep5anwyqvmryycfvxau7s6t7mm3qlmyjz6r2f8p6m4azpdnjhfrqafhe5r
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: ruji-rune
+    address: sthor1knzcsjqu3wpgm0ausx6w0th48kvl2wvtqzmvud4hgst4ggutehlseele4r
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: ruji-eth-usdc
+    address: sthor1xf6jqgc3xjzw6z59234r6lpch5d2krd2g0fpq4cv7p7ly2ghk0zs2qp0fq
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: ruji-eth-usdt
+    address: sthor1uywajy5vddpsvdkcztp92ymlnfwv07tu4stpprwrts4lmc6c9l0sy4s4e5
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: tcy-rune
+    address: sthor1c72qtzxmjp58xd5wtwmlw42w5r6ggt4vhless0c0zyrm7z83xf7seepalh
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: auto-eth-usdt
+    address: sthor15y5sgnt6tge8pkgp28lvxnw2rhsveup0stlvw0y7t9qs7ww7stpqyehp7r
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: lqdy-btc
+    address: sthor1d93rrkmq7ug5f2rhmhcereqsty54cfx4kt97s4dzttm403dwuchq82dpau
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: lqdy-eth-usdt
+    address: sthor1543z46lavr2cnld8cfnx9rasjsvej3x3fm0z5exst4v4t0d3llest30s5c
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: nami-eth-usdt
+    address: sthor1z4kge48m2rtmj8xencmnhycpw5cpsc8z6qgvp0pzvucu2ehv947s8axv9f
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+  - id: xrp-eth-usdc
+    address: sthor1h6whg0g8eacuc3a98qyg05azzv78asuy80m8x75hxv068uvvq2hq29ckkz
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:

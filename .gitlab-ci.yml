@@ -1,0 +1,106 @@
+stages:
+  - build
+  - check
+  - deploy
+
+variables:
+  MIX_ENV: test
+  POSTGRES_HOST: postgres
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: "postgres"
+  MIX_HOME: /opt/build/.mix
+  HEX_HOME: /opt/build/.hex
+  DOCKER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+
+services:
+  - name: postgres:14
+    alias: postgres
+
+.setup_elixir: &setup_elixir
+  before_script:
+    - mkdir -p $MIX_HOME $HEX_HOME
+    - mix local.hex --force
+    - mix local.rebar --force
+    - mix deps.get
+    - mix ecto.create --quiet
+    - mix ecto.migrate --quiet
+
+build:
+  stage: build
+  image: elixir:1.17.3
+  <<: *setup_elixir
+  script:
+    - mix compile --warnings-as-errors
+  artifacts:
+    paths:
+      - _build/
+      - deps/
+    expire_in: 1 hour
+  only:
+    - merge_requests
+    - develop
+    - stage
+    - main
+    - dev
+
+lint:
+  stage: check
+  image: elixir:1.17.3
+  <<: *setup_elixir
+  dependencies:
+    - build
+  script:
+    - mix format --check-formatted
+    - mix credo
+  only:
+    - merge_requests
+    - develop
+    - stage
+    - main
+    - dev
+
+test:
+  stage: check
+  image: elixir:1.17.3
+  <<: *setup_elixir
+  dependencies:
+    - build
+  script:
+    - mix test
+  only:
+    - merge_requests
+    - develop
+    - stage
+    - main
+    - dev
+
+deploy_stagenet:
+  stage: deploy
+  image: elixir:1.17.3
+  script:  
+    - >
+      git remote add gigalixir https://$GIGALIXIR_EMAIL:$GIGALIXIR_API_KEY@git.gigalixir.com/$GIGALIXIR_APP_NAME_STAGENET.git &&
+      git push -f gigalixir HEAD:refs/heads/main
+  only:
+    - stage
+
+deploy_mainnet:
+  stage: deploy
+  image: elixir:1.17.3
+  script:  
+    - >
+      git remote add gigalixir https://$GIGALIXIR_EMAIL:$GIGALIXIR_API_KEY@git.gigalixir.com/$GIGALIXIR_APP_NAME_MAINNET.git &&
+      git push -f gigalixir HEAD:refs/heads/main
+  only:
+    - main
+
+create_image:
+  stage: deploy
+  image: docker:28
+  services:
+    - docker:28-dind
+  when: manual
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $DOCKER_IMAGE .
+    - docker push $DOCKER_IMAGE

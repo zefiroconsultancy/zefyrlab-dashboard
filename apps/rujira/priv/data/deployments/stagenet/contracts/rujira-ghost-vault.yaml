@@ -1,0 +1,33 @@
+code: 963
+
+targets:
+  - id: bsc-bnb
+    address: sthor1a6cfjfwqnctue9lyy7hkuzsz2qds8qdh6ffrvpjg4xankwms93dsv9pnvj
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+      denom: bsc-bnb
+  - id: btc-btc
+    address: sthor1pqwm49kzstzudz5p6apw5pp9uhuk06wggjpwc450ag5t67fssreszgnesl
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+      denom: btc-btc
+  - id: eth-eth
+    address: sthor1us0czk4suhshqjr3le8crmdzw9ypv0qnnrtdpknfl6fhmsn4pjhqxlxcw0
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+      denom: eth-eth
+  - id: eth-usdt
+    address: sthor165wfwxnw3vrp35h3ttf23vd0zgs3mt34r8rll50qe0jffun5ts8sdjp38e
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+      denom: eth-usdt-0xdac17f958d2ee523a2206206994597c13d831ec7
+  - id: eth-usdc
+    address: sthor1mzdnknn682j82k0n3szq8fnv8zglhcw5u26cms8e9zdnkz96x39qc58qxj
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    config:
+      denom: eth-usdc-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48

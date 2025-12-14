@@ -1,0 +1,306 @@
+defmodule Rujira.Assets do
+  alias __MODULE__.Asset
+  alias Rujira.Assets.Metadata
+  alias Rujira.Bow
+  alias Rujira.Deployments
+  alias Thorchain.Types.Query.Stub, as: Q
+  alias Thorchain.Types.QueryPoolsRequest
+
+  @delimiters [".", "-", "/", "~"]
+  # https://github.com/cosmos/cosmos-sdk/blob/main/types/coin.go#L871
+  @coin_regex ~r/^(\d+(?:\.\d+)?|\.\d+)\s*([a-zA-Z][a-zA-Z0-9\/:._-]{2,127})$/
+
+  @doc """
+  Convert string notation to an Assets.Asset
+  """
+  def from_string(id) do
+    %Asset{
+      id: id,
+      type: type(id),
+      chain: chain(id),
+      symbol: symbol(id),
+      ticker: ticker(id)
+    }
+  end
+
+  @doc """
+  Used when refereinging pairs and tokens shorthand in IDs
+  """
+  def from_shortcode("RUJI"), do: from_string("THOR.RUJI")
+  def from_shortcode("RUNE"), do: from_string("THOR.RUNE")
+  def from_shortcode("TCY"), do: from_string("THOR.TCY")
+  def from_shortcode("BNB"), do: from_string("BSC.BNB")
+  def from_shortcode("ATOM"), do: from_string("GAIA.ATOM")
+
+  def from_shortcode(str) do
+    case String.split(str, ~r/[\.\-]/) do
+      [symbol] -> from_string("#{symbol}.#{symbol}")
+      [symbol, ticker] -> from_string("#{symbol}.#{ticker}")
+    end
+  end
+
+  def to_string(%Asset{id: id}), do: id
+
+  @moduledoc """
+  Interfaces for interacting with THORChain Asset values
+  """
+  def chain("x/" <> _), do: "THOR"
+
+  def chain(str) do
+    [c | _] = String.split(str, @delimiters)
+    c
+  end
+
+  def symbol("x/" <> id), do: String.upcase(id)
+
+  def symbol(str) do
+    [_, v] = String.split(str, @delimiters, parts: 2)
+    v
+  end
+
+  def ticker("x/" <> id), do: String.upcase(id)
+
+  def ticker(str) do
+    [_, v] = String.split(str, @delimiters, parts: 2)
+    [sym | _] = String.split(v, "-")
+    sym
+  end
+
+  def decimals(%{type: :layer_1, chain: "AVAX", ticker: "USDC"}), do: 6
+  def decimals(%{type: :layer_1, chain: "AVAX", ticker: "USDT"}), do: 6
+  def decimals(%{type: :layer_1, chain: "AVAX"}), do: 18
+  def decimals(%{type: :layer_1, chain: "BASE", ticker: "USDC"}), do: 6
+  def decimals(%{type: :layer_1, chain: "BASE"}), do: 18
+  def decimals(%{type: :layer_1, chain: "BCH"}), do: 8
+  def decimals(%{type: :layer_1, chain: "BTC"}), do: 8
+  def decimals(%{type: :layer_1, chain: "BSC"}), do: 18
+  def decimals(%{type: :layer_1, chain: "DOGE"}), do: 8
+  def decimals(%{type: :layer_1, chain: "ETH", ticker: "USDC"}), do: 6
+  def decimals(%{type: :layer_1, chain: "ETH", ticker: "USDT"}), do: 6
+  def decimals(%{type: :layer_1, chain: "ETH", ticker: "WBTC"}), do: 8
+  def decimals(%{type: :layer_1, chain: "ETH"}), do: 18
+  def decimals(%{type: :layer_1, chain: "GAIA"}), do: 6
+  def decimals(%{type: :layer_1, chain: "KUJI"}), do: 6
+  def decimals(%{type: :layer_1, chain: "LTC"}), do: 8
+  def decimals(%{type: :layer_1, chain: "NOBLE", ticker: "USDY"}), do: 18
+  def decimals(%{type: :layer_1, chain: "NOBLE"}), do: 6
+  def decimals(%{type: :layer_1, chain: "OSMO"}), do: 6
+  def decimals(%{type: :layer_1, chain: "TRON"}), do: 6
+  def decimals(%{type: :layer_1, chain: "XRP"}), do: 6
+  def decimals(_), do: 8
+
+  def type(str) do
+    cond do
+      String.starts_with?(str, "THOR.") -> :native
+      String.match?(str, ~r/^[A-Z]+\./) -> :layer_1
+      String.match?(str, ~r/^[A-Z]+\//) -> :synth
+      String.match?(str, ~r/^[A-Z]+~/) -> :trade
+      String.match?(str, ~r/^[A-Z]+-/) -> :secured
+      true -> :native
+    end
+  end
+
+  def to_native(%{id: "THOR.RUNE"}), do: {:ok, "rune"}
+  def to_native(%{id: "THOR.RUJI"}), do: {:ok, "x/ruji"}
+  def to_native(%{id: "THOR.TCY"}), do: {:ok, "tcy"}
+  def to_native(%{id: "THOR." <> _ = id}), do: {:ok, String.downcase(id)}
+  def to_native(%{id: "x/" <> _ = denom}), do: {:ok, denom}
+
+  def to_native(%{type: "SECURED", chain: chain, symbol: symbol}) do
+    {:ok, String.downcase(chain) <> "-" <> String.downcase(symbol)}
+  end
+
+  def to_native(%{type: :secured, chain: chain, symbol: symbol}) do
+    {:ok, String.downcase(chain) <> "-" <> String.downcase(symbol)}
+  end
+
+  # try to convert to secured first then to native
+  def to_native(%Asset{} = a), do: to_secured(a) |> to_native
+
+  def to_native(nil), do: {:ok, nil}
+
+  def to_layer1(%Asset{chain: "THOR"}), do: nil
+
+  def to_layer1(%Asset{id: id} = a) do
+    %{a | type: :layer_1, id: String.replace(id, ~r/[\.\-\/]/, ".", global: false)}
+  end
+
+  def to_secured(%Asset{chain: "THOR"}), do: nil
+
+  def to_secured(%Asset{id: id} = a) do
+    %{a | type: :secured, id: String.replace(id, ~r/[\.\-\/]/, "-", global: false)}
+  end
+
+  @doc """
+  Converts a denom string to a THORChain asset - native token or
+
+  This will only convert
+  """
+  def from_denom("x/ruji") do
+    {:ok, %Asset{id: "THOR.RUJI", type: :native, chain: "THOR", symbol: "RUJI", ticker: "RUJI"}}
+  end
+
+  def from_denom("rune") do
+    {:ok, %Asset{id: "THOR.RUNE", type: :native, chain: "THOR", symbol: "RUNE", ticker: "RUNE"}}
+  end
+
+  def from_denom("tcy") do
+    {:ok, %Asset{id: "THOR.TCY", type: :native, chain: "THOR", symbol: "TCY", ticker: "TCY"}}
+  end
+
+  def from_denom("thor." <> symbol) do
+    symbol = String.upcase(symbol)
+
+    {:ok,
+     %Asset{id: "THOR.#{symbol}", type: :native, chain: "THOR", symbol: symbol, ticker: symbol}}
+  end
+
+  def from_denom("x/staking-" <> id = denom) do
+    with {:ok, staked} <- from_denom(id) do
+      {:ok,
+       %Asset{
+         id: denom,
+         type: :native,
+         chain: "THOR",
+         symbol: "s" <> staked.symbol,
+         ticker: "s" <> staked.ticker
+       }}
+    end
+  end
+
+  def from_denom("x/bow-xyk-" <> id = denom) do
+    with %{config: %{"strategy" => %{"xyk" => %{"x" => x, "y" => y}}}} <-
+           Bow
+           |> Deployments.list_targets()
+           |> Enum.find(fn %{config: %{"strategy" => %{"xyk" => %{"x" => x, "y" => y}}}} ->
+             # `-` is used as a separator for the xyk denom as well as secured assets
+             String.downcase("#{x}-#{y}") == String.downcase(id)
+           end),
+         {:ok, x} <- from_denom(x),
+         {:ok, y} <- from_denom(y) do
+      {:ok,
+       %Asset{
+         id: denom,
+         type: :native,
+         chain: "THOR",
+         symbol: "#{x.symbol}/#{y.symbol} LP",
+         ticker: "#{x.ticker}/#{y.ticker} LP"
+       }}
+    else
+      _ ->
+        {:ok,
+         %Asset{
+           id: denom,
+           type: :native,
+           chain: "THOR",
+           symbol: String.upcase(id),
+           ticker: String.upcase(id)
+         }}
+    end
+  end
+
+  def from_denom("x/nami-index-" <> _ = denom) do
+    with {:ok, metadata} <- Metadata.load_metadata(%Asset{id: denom}) do
+      {:ok,
+       %Asset{
+         id: denom,
+         type: :native,
+         chain: "THOR",
+         symbol: metadata.symbol,
+         ticker: metadata.symbol
+       }}
+    end
+  end
+
+  def from_denom("x/" <> id = denom) do
+    {:ok,
+     %Asset{
+       id: denom,
+       type: :native,
+       chain: "THOR",
+       symbol: String.upcase(id),
+       ticker: String.upcase(id)
+     }}
+  end
+
+  def from_denom(denom) do
+    case denom |> String.upcase() |> String.split(@delimiters, parts: 2) do
+      [chain, symbol] ->
+        [ticker | _] = String.split(symbol, "-")
+
+        {:ok,
+         %Asset{
+           id: String.upcase(denom),
+           type: type(String.upcase(denom)),
+           chain: if(chain == "BNB", do: "BSC", else: chain),
+           symbol: symbol,
+           ticker: ticker
+         }}
+
+      _ ->
+        {:error, "Invalid Denom #{denom}"}
+    end
+  end
+
+  def eq_denom(%Asset{} = a, denom) do
+    case from_denom(denom) do
+      {:ok, asset} -> a.chain == asset.chain and a.ticker == asset.ticker
+      _ -> false
+    end
+  end
+
+  def short_id(%{chain: chain, ticker: ticker}), do: "#{chain}.#{ticker}"
+
+  def label(%{chain: "ETH", ticker: "USDC"}),
+    do: "USDC"
+
+  def label(%{chain: chain, ticker: ticker}) when ticker in ["USDC", "USDT"],
+    do: "#{ticker}.#{chain}"
+
+  def label(%{chain: chain, ticker: "ETH"}) when chain != "ETH",
+    do: "ETH.#{chain}"
+
+  def label(%{ticker: ticker}), do: ticker
+
+  @doc """
+  Parses a comma-separated string of coin amounts into a map of `denom => amount`.
+
+  ## Examples
+
+      iex> parse_coins("1000uatom")
+      {:ok, %{"uatom" => "1000"}}
+
+      iex> parse_coins("0.5x/ruji,42.0uatom")
+      {:ok, %{"x/ruji" => "0.5", "uatom" => "42.0"}}
+
+      iex> parse_coins(".25test-token,100foo/bar")
+      {:ok, %{"test-token" => ".25", "foo/bar" => "100"}}
+
+      iex> parse_coins("invalid")
+      {:error, :invalid_denom_format}
+  """
+
+  def parse_coins(str) do
+    str
+    |> String.split(",", trim: true)
+    |> Enum.map(&Regex.run(@coin_regex, &1))
+    |> Enum.reduce_while(%{}, fn
+      [_, amount, denom], acc -> {:cont, Map.put(acc, denom, String.to_integer(amount))}
+      _, _ -> {:halt, {:error, :invalid_denom_format}}
+    end)
+    |> case do
+      {:error, _} = error -> error
+      map -> {:ok, map}
+    end
+  end
+
+  def load_metadata(%Asset{type: :native} = asset) do
+    with {:ok, metadata} <- Metadata.load_metadata(asset) do
+      {:ok, %{metadata | decimals: decimals(asset)}}
+    end
+  end
+
+  def load_metadata(%Asset{ticker: ticker} = asset) do
+    {:ok, %{symbol: ticker, decimals: decimals(asset)}}
+  end
+end

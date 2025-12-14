@@ -1,0 +1,373 @@
+defmodule ZefyrlabWeb.MagicAuth do
+  use ZefyrlabWeb, :html
+  use Gettext, backend: ZefyrlabWeb.Gettext
+
+  require Logger
+
+  @behaviour MagicAuth.Callbacks
+
+  # This module implements the `MagicAuth.Callbacks` behaviour and provides customizable
+  # components that can be tailored to match your application's needs:
+  #
+  # - Log in form rendering for email input
+  # - One-time password verification form rendering
+  # - Email delivery of one-time password codes
+  # - HTML and text email templates
+  # - Error message translations
+  # - Email-based access control
+  #
+  # The authentication flow consists of three steps:
+  #
+  # 1. User enters their email in the log in form
+  # 2. User receives a one-time password code via email
+  # 3. User enters the code in the verification form to complete authentication
+  #
+  # ## Customization
+  #
+  # This module is designed to be highly customizable to better fit your application's
+  # specific requirements. You can customize:
+  #
+  # - The log in form appearance by modifying `log_in_form/1`
+  # - The verification form appearance by modifying `verify_form/1`
+  # - Email templates by modifying `one_time_password_requested/1`, `text_email_body/1` and `html_email_body/1`
+  # - Access control logic by modifying `log_in_requested/1`
+  # - Error message translations by modifying `translate_error/1`
+  #
+  # This flexibility allows you to maintain a consistent look and feel across your
+  # application while using the magic one-time password authentication functionality.
+
+  attr :form, :any, required: true, doc: "the Phoenix.HTML.Form for the email"
+  attr :flash, :map, required: true, doc: "the flash messages to display"
+
+  # custom
+  defp flash_group(assigns) do
+    ~H"""
+    <%= if msg = Phoenix.Flash.get(@flash, :info) do %>
+      <div class="mb-4 rounded-lg border px-4 py-3" role="alert">
+        <%= msg %>
+      </div>
+    <% end %>
+
+    <%= if msg = Phoenix.Flash.get(@flash, :error) do %>
+      <div class="mb-4 rounded-lg border px-4 py-3" role="alert">
+        <%= msg %>
+      </div>
+    <% end %>
+    """
+  end
+
+  # Renders the log in form displayed at `/sessions/log_in` where users can enter their email
+  # to request a one-time password code.
+  #
+  # This form is the first step in the authentication flow. After submitting a valid email,
+  # the user will receive a one-time password code and be redirected to the verification page.
+  #
+  # You can customize this form by editing this function to meet your project's specific needs.
+  @impl true
+  def log_in_form(assigns) do
+    ~H"""
+    <.flash_group flash={@flash} />
+    <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-md w-full space-y-8">
+        <div class="-mt-32">
+          <%!-- <img
+            class="mx-auto h-32 w-32 border mb-12"
+            src="/images/logo.png"
+            alt={gettext("Your Company")}
+          /> --%>
+          <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            {gettext("Sign in to your account")}
+          </h2>
+          <p class="mt-2 text-center text-sm text-gray-600">
+            {gettext("Enter your email to receive an access code")}
+          </p>
+        </div>
+
+        <.form for={@form} phx-change="validate" phx-submit="login" class="mt-8 space-y-6">
+          <.input field={@form[:email]} autocomplete="off" phx-debounce="500"/>
+          <div>
+            <button
+              type="submit"
+              class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              {gettext("Send log in code")}
+            </button>
+          </div>
+        </.form>
+      </div>
+    </div>
+    """
+  end
+
+  attr :form, :any, required: true, doc: "the Phoenix.HTML.Form for the One Time Password code"
+  attr :error, :string, required: true, doc: "error message to display if verification fails"
+  attr :flash, :map, required: true, doc: "the flash messages to display"
+  attr :email, :string, required: true, doc: "the user's email to which the code was sent"
+  attr :rate_limited?, :boolean, required: true, doc: "whether the email is rate limited"
+  attr :countdown, :integer, required: true, doc: "the countdown to reset rate limit"
+
+  @doc """
+  Renders the verification form displayed at `/sessions/verify` where users can enter
+  the one-time password code sent to their email.
+
+  This form is the second step in the authentication flow. After submitting a valid code,
+  the session will be creatged and redirected to the originally requested page that was stored in the HTTP session.
+
+  You can customize this form by editing this function to meet your project's specific needs.
+  """
+  @impl true
+  def verify_form(assigns) do
+    ~H"""
+    <.flash_group flash={@flash} />
+    <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-md w-full space-y-8">
+        <div class="-mt-32">
+          <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            {gettext("Enter verification code")}
+          </h2>
+          <p class="mt-2 text-center text-sm text-gray-600">
+            {gettext("Please enter the %{one_time_password_length}-digit code sent to your email",
+              one_time_password_length: MagicAuth.Config.one_time_password_length()
+            )}
+          </p>
+          <p class="text-center text-sm text-gray-900 font-medium">{@email}</p>
+        </div>
+
+        <.form for={@form} phx-change="verify" class="mt-8 space-y-6">
+          <div class="rounded-md -space-y-px">
+            <div>
+              <.one_time_password_input field={@form[:password]} error={@error} />
+            </div>
+          </div>
+
+          <div class="text-center">
+            <p class="text-sm text-gray-700 font-medium">
+              {gettext("Didn't receive the code?")}
+              <%= if @rate_limited? do %>
+                <p class="text-sm text-gray-600">
+                  {gettext("Please wait %{countdown} seconds to request a new code",
+                    countdown: @countdown
+                  )}
+                </p>
+              <% else %>
+                <div class="flex justify-center">
+                  <button
+                    type="button"
+                    phx-click="resend_code"
+                    class="font-medium text-sm text-indigo-600 hover:text-indigo-500"
+                  >
+                    {gettext("Resend")}
+                  </button>
+                </div>
+              <% end %>
+            </p>
+          </div>
+        </.form>
+      </div>
+    </div>
+    """
+  end
+
+  attr :field, :atom, required: true, doc: "the Phoenix.HTML.Form field for the access code"
+  attr :error, :string, required: true, doc: "error message to display if verification fails"
+  attr :rest, :global, doc: "additional HTML attributes to be passed to the input fields"
+
+  #  Renders the input fields for the one-time password code.
+  #
+  #  Creates a series of individual input fields, one for each digit of the code,
+  #  with specific styling and behavior for verification code input.
+  #  The fields are connected via JavaScript to allow automatic navigation between them
+  #  as the user types.
+  #
+  #  ## Examples
+  #
+  #      <.one_time_password_input field={@form[:password]} />
+  defp one_time_password_input(assigns) do
+    ~H"""
+    <div class={"flex flex-col items-center space-y-4"}>
+      <div class="flex justify-center space-x-2"
+        id={"one-time-password-input-#{Phoenix.HTML.Form.input_id(@field.form, @field.field)}"}
+        phx-hook="MagicAuth.OneTimePasswordInput"
+        phx-update="ignore"
+      >
+        <%= for _i <- 1..MagicAuth.Config.one_time_password_length() do %>
+          <input
+            type="text"
+            name={Phoenix.HTML.Form.input_name(@field.form, @field.field) <> "[]"}
+            maxlength="1"
+            class="w-12 h-12 text-center text-2xl border rounded-md focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
+            autocomplete="off"
+            inputmode="numeric"
+            {@rest}
+          />
+        <% end %>
+      </div>
+      <p class="text-sm text-red-600 min-h-6"><%= @error %></p>
+    </div>
+    """
+  end
+
+  #  Callback called when the user requests a one-time password in `MagicAuth.LoginLive`.
+  #
+  #  This callback is responsible for sending the access code via email to the user.
+  #
+  #  ## Parameters
+  #
+  #  Receives a map containing:
+  #
+  #    * `:code` - The one-time password code generated to be sent via email
+  #    * `:email` - The user's email address where the code will be sent
+  #
+  @impl true
+  def one_time_password_requested(%{code: code, email: email}) do
+    Swoosh.Email.new()
+    |> Swoosh.Email.to(email)
+    |> Swoosh.Email.from({"Zefyr Labs", "noreply@zefyrlab.com"})
+    |> Swoosh.Email.subject("Your Zefyr Labs access code")
+    |> Swoosh.Email.text_body(text_email_body(code))
+    |> Swoosh.Email.html_body(html_email_body(code))
+    |> Zefyrlab.Mailer.deliver()
+    |> case do
+      {:ok, _term} ->
+        Logger.debug("One time password e-mail sent to #{email} successfully.")
+
+      {:error, error} ->
+        Logger.error("""
+        One time password e-mail sent to #{email} failed.
+          Error: #{inspect(error)}
+        """)
+    end
+  end
+
+  #  Generates the text version of the email body containing the one-time password code.
+  #
+  #  ## Parameters
+  #
+  #    * `code` - The one-time password code to be sent to the user
+  #
+  #  ## Returns
+  #
+  #  Returns a string containing the text email body with the code and expiration time.
+  defp text_email_body(code) do
+    """
+    Hello!
+
+    Here is your access code: #{code}
+
+    This code expires in #{MagicAuth.Config.one_time_password_expiration()} minutes.
+
+    If you did not request this code, please ignore this email.
+    """
+  end
+
+  #  Generates the HTML version of the email body containing the one-time password code.
+  #
+  #  ## Parameters
+  #
+  #    * `code` - The one-time password code to be sent to the user
+  #
+  #  ## Returns
+  #
+  #  Returns a string containing the HTML email body with styled code and expiration time.
+  defp html_email_body(code) do
+    """
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+      <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+        <!-- <img
+          src="/200x133?text=Your+Logo"
+          alt={gettext("Your Company")}
+          style="margin-bottom: 20px;"
+        -->
+
+        <h1 style="color: #4f46e5; margin-bottom: 20px;">Your Access Code</h1>
+
+        <p style="font-size: 16px; color: #374151; margin-bottom: 30px;">
+          Hello! Here is your access code:
+        </p>
+
+        <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px dashed #4f46e5;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #4f46e5;">#{code}</span>
+        </div>
+
+        <p style="font-size: 14px; color: #6b7280; margin-top: 20px;">
+          This code expires in #{MagicAuth.Config.one_time_password_expiration()} minutes.
+        </p>
+
+        <p style="font-size: 12px; color: #9ca3af; margin-top: 30px; font-style: italic;">
+          If you did not request this code, please ignore this email.
+        </p>
+      </div>
+    </div>
+    """
+  end
+
+  # Callback invoked when a login is requested for an email address.
+  #
+  # It allows you to control which email addresses can access the application by
+  # implementing custom logic to allow or deny access based on the email.
+  #
+  # Called after the user correctly enters the code sent via email
+  # and the system validates that the code is correct and within the expiration period.
+  #
+  # ## Examples
+  #
+  # ```
+  # # Allow only company emails
+  # def log_in_requested(%{email: email}) do
+  #   if String.ends_with?(email, "@mycompany.com") do
+  #     :allow
+  #   else
+  #     :deny
+  #   end
+  # end
+  #
+  # # Allow only whitelisted emails
+  # def log_in_requested(%{email: email}) do
+  #   allowed_emails = ["admin@example.com", "user@example.com"]
+  #   if email in allowed_emails, do: :allow, else: :deny
+  # end
+  #
+  # # Allow only users that exist in the database
+  # def log_in_requested(%{email: email}) do
+  #   case Repo.get_by(User, email: email) do
+  #     nil -> :deny  # User not found in database
+  #     user -> {:allow, user.id}  # User exists in database
+  #   end
+  # end
+  # ```
+  #
+  # ## Parameters
+  #
+  #   * `data` - A map containing the `:email` field of the user requesting log in
+  #
+  # ## Returns
+  #
+  #   * `:allow` - Allow user to access the application
+  #   * `:deny` - Deny the log in request
+  #   * `{:allow, user_id}` - Allow user to access the application and store the user_id in the session.
+  #      When this format is used, the user will be automatically loaded from the database and assigned to
+  #      conn.assigns.current_user and socket.assigns.current_user.
+  #
+  # See `MagicAuth.log_in_requested/1` and `MagicAuth.on_mount/4` docs for more information.
+  #
+  @impl true
+  def log_in_requested(%{email: _email}), do: :allow
+
+  # Translates error messages for the authentication system.
+  @impl true
+  def translate_error(:invalid_code, _opts), do: "Invalid code"
+  def translate_error(:code_expired, _opts), do: "Code expired"
+  def translate_error(:unauthorized, _opts), do: "You need to log in to access this page."
+  def translate_error(:access_denied, _opts), do: "You don't have permission to access this page."
+
+  def translate_error(:too_many_one_time_password_requests, opts),
+    do: "Too many requests. Wait #{display_countdown(opts[:countdown])} to request a new code."
+
+  def translate_error(:code_resent, _opts), do: "Code resent"
+
+  def translate_error(:too_many_login_attempts, opts),
+    do: "Too many login attempts. Wait #{display_countdown(opts[:countdown])} to try again."
+
+  defp display_countdown(countdown) when countdown < 60, do: "#{countdown} seconds"
+  defp display_countdown(countdown), do: "#{div(countdown, 60)} minutes"
+end

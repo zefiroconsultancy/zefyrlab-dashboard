@@ -1,0 +1,156 @@
+defmodule Rujira.Fin.Pair do
+  @moduledoc """
+  Parses trading pair configuration data into a structured representation for the FIN protocol.
+  """
+  alias Rujira.Assets
+  alias Rujira.Deployments.Target
+  alias Rujira.Fin.Book
+
+  defstruct [
+    :id,
+    :address,
+    :market_maker,
+    :token_base,
+    :token_quote,
+    :oracle_base,
+    :oracle_quote,
+    :tick,
+    :fee_taker,
+    :fee_maker,
+    :fee_address,
+    :book,
+    :history,
+    :deployment_status
+  ]
+
+  @type t :: %__MODULE__{
+          id: String.t(),
+          address: String.t(),
+          market_maker: String.t(),
+          token_base: String.t(),
+          token_quote: String.t(),
+          oracle_base: String.t(),
+          oracle_quote: String.t(),
+          tick: integer(),
+          fee_taker: Decimal.t(),
+          fee_maker: Decimal.t(),
+          fee_address: String.t(),
+          book: :not_loaded | Book.t(),
+          deployment_status: Target.status()
+        }
+
+  @spec from_config(String.t(), map()) :: :error | {:ok, __MODULE__.t()}
+  def from_config(address, %{
+        "market_maker" => market_maker,
+        "denoms" => denoms,
+        "oracles" => oracles,
+        "tick" => tick,
+        "fee_taker" => fee_taker,
+        "fee_maker" => fee_maker,
+        "fee_address" => fee_address
+      }) do
+    with {fee_taker, ""} <- Decimal.parse(fee_taker),
+         {fee_maker, ""} <- Decimal.parse(fee_maker),
+         {:ok, oracle_base} <- get_asset(Enum.at(oracles || [], 0)),
+         {:ok, oracle_quote} <- get_asset(Enum.at(oracles || [], 1)) do
+      {:ok,
+       %__MODULE__{
+         id: address,
+         address: address,
+         market_maker: market_maker,
+         token_base: Enum.at(denoms, 0),
+         token_quote: Enum.at(denoms, 1),
+         oracle_base: oracle_base,
+         oracle_quote: oracle_quote,
+         tick: tick,
+         fee_taker: fee_taker,
+         fee_maker: fee_maker,
+         fee_address: fee_address,
+         book: :not_loaded,
+         deployment_status: :live
+       }}
+    end
+  end
+
+  def from_target(%Target{address: address, config: config, status: status}) do
+    with %{
+           denoms: denoms,
+           oracles: oracles,
+           market_maker: market_maker,
+           tick: tick,
+           fee_taker: fee_taker,
+           fee_maker: fee_maker,
+           fee_address: fee_address
+         } <- init_msg(config),
+         {fee_taker, ""} <- Decimal.parse(fee_taker),
+         {fee_maker, ""} <- Decimal.parse(fee_maker),
+         {:ok, oracle_base} <- get_asset(Enum.at(oracles || [], 0)),
+         {:ok, oracle_quote} <- get_asset(Enum.at(oracles || [], 1)) do
+      {:ok,
+       %__MODULE__{
+         id: address,
+         address: address,
+         market_maker: market_maker,
+         token_base: Enum.at(denoms, 0),
+         token_quote: Enum.at(denoms, 1),
+         oracle_base: oracle_base,
+         oracle_quote: oracle_quote,
+         tick: tick,
+         fee_taker: fee_taker,
+         fee_maker: fee_maker,
+         fee_address: fee_address,
+         book: :not_loaded,
+         deployment_status: status
+       }}
+    end
+  end
+
+  def get_asset(%{"chain" => chain, "symbol" => symbol}),
+    do: get_asset(%{chain: chain, symbol: symbol})
+
+  def get_asset(%{chain: chain, symbol: symbol}) do
+    {:ok, String.upcase(chain) <> "." <> symbol}
+  end
+
+  def get_asset(nil), do: {:ok, nil}
+
+  def init_msg(
+        %{
+          "denoms" => [x, y],
+          "fee_address" => fee_address
+        } = config
+      ) do
+    market_maker = Map.get(config, "market_maker")
+    tick = Map.get(config, "tick", 6)
+
+    with {:ok, base} <- Assets.from_denom(x),
+         {:ok, quote_} <- Assets.from_denom(y) do
+      %{
+        denoms: [x, y],
+        oracles: [
+          %{chain: base.chain, symbol: base.symbol},
+          %{chain: quote_.chain, symbol: quote_.symbol}
+        ],
+        market_maker: market_maker,
+        tick: tick,
+        fee_taker: "0.0015",
+        fee_maker: "0.00075",
+        fee_address: fee_address
+      }
+    else
+      _ ->
+        %{
+          denoms: [x, y],
+          market_maker: market_maker,
+          tick: tick,
+          fee_taker: "0.0015",
+          fee_maker: "0.00075",
+          fee_address: fee_address
+        }
+    end
+  end
+
+  def migrate_msg(_from, _to, _), do: %{}
+
+  def init_label(_, %{"denoms" => [x, y]}), do: "rujira-fin:#{x}:#{y}"
+end

@@ -1,0 +1,8 @@
+code: 967
+
+targets:
+  - id: ghost-credit
+    admin: ${accounts:admin}
+    creator: ${accounts:creator}
+    address: sthor16xp48e9s30f3g5zesq6zhp2ty25pnszkx3mcyssa8w57d5rd6qps3s97hj
+    config: {}

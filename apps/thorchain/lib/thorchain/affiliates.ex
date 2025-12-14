@@ -1,0 +1,72 @@
+defmodule Thorchain.Affiliates do
+  @moduledoc """
+  Parses affiliates and BPS values from a THORChain swap memo.
+
+  Returns a list of `{affiliate, bps_decimal}` tuples, or errors.
+  """
+
+  @doc """
+  Parses the affiliate and BPS portion of a THORChain memo.
+
+  ## Returns
+    - `{:ok, [{affiliate, bps_decimal}, ...]}`
+    - `{:error, :no_affiliate}` if no affiliates found
+    - `:error` on malformed input
+  """
+  @spec get_affiliate(binary()) ::
+          :error | {:error, :no_affiliate} | {:ok, [{String.t(), Decimal.t()}]}
+  def get_affiliate(memo) do
+    parts = String.split(memo, ":")
+    parse_affiliate_parts(parts)
+  end
+
+  defp parse_affiliate_parts([_a, _b, _c, _d, affiliates_str, bps_str]) do
+    parse_affiliate(affiliates_str, bps_str)
+  end
+
+  defp parse_affiliate_parts(_), do: {:ok, []}
+
+  def parse_affiliate(affiliates_str, bps_str) do
+    affiliates = parse_list(affiliates_str)
+    bps = parse_list(bps_str)
+
+    cond do
+      affiliates == [] or bps == [] ->
+        {:ok, []}
+
+      length(affiliates) == length(bps) ->
+        zip_and_cast(affiliates, bps)
+
+      length(bps) == 1 and length(affiliates) > 1 ->
+        zip_and_cast(affiliates, List.duplicate(hd(bps), length(affiliates)))
+
+      true ->
+        :error
+    end
+  end
+
+  defp parse_list(""), do: []
+  defp parse_list(str), do: String.split(str, "/")
+
+  defp zip_and_cast(affiliates, bps) do
+    pairs =
+      Enum.zip(affiliates, bps)
+      |> Enum.map(&cast_affiliate_bps/1)
+
+    if Enum.any?(pairs, &match?(:error, &1)) do
+      :error
+    else
+      {:ok, pairs}
+    end
+  end
+
+  defp cast_affiliate_bps({aff, bps_str}) do
+    case Decimal.cast(bps_str) do
+      {:ok, bps_dec} ->
+        {aff, Decimal.div(bps_dec, Decimal.new(10_000))}
+
+      _ ->
+        :error
+    end
+  end
+end
