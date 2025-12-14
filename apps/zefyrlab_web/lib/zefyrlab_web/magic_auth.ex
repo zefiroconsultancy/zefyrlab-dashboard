@@ -207,8 +207,8 @@ defmodule ZefyrlabWeb.MagicAuth do
   def one_time_password_requested(%{code: code, email: email}) do
     Swoosh.Email.new()
     |> Swoosh.Email.to(email)
-    |> Swoosh.Email.from({"Zefyr Labs", "noreply@zefyrlab.com"})
-    |> Swoosh.Email.subject("Your Zefyr Labs access code")
+    |> Swoosh.Email.from({"Zefyr Lab", "noreply@zefyrlab.com"})
+    |> Swoosh.Email.subject("Your Zefyr Lab access code")
     |> Swoosh.Email.text_body(text_email_body(code))
     |> Swoosh.Email.html_body(html_email_body(code))
     |> Zefyrlab.Mailer.deliver()
