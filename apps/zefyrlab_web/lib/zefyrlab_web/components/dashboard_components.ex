@@ -479,6 +479,7 @@ defmodule ZefyrlabWeb.DashboardComponents do
     |> Enum.join(",")
     |> String.reverse()
   end
+
   defp format_number(_), do: "0"
 
   defp format_rune(rune_base_units) when is_integer(rune_base_units) do
@@ -490,15 +491,17 @@ defmodule ZefyrlabWeb.DashboardComponents do
     # Add thousands separators
     [integer_part, decimal_part] = String.split(formatted, ".")
 
-    integer_with_commas = integer_part
-    |> String.graphemes()
-    |> Enum.reverse()
-    |> Enum.chunk_every(3)
-    |> Enum.join(",")
-    |> String.reverse()
+    integer_with_commas =
+      integer_part
+      |> String.graphemes()
+      |> Enum.reverse()
+      |> Enum.chunk_every(3)
+      |> Enum.join(",")
+      |> String.reverse()
 
     integer_with_commas <> "." <> decimal_part
   end
+
   defp format_rune(_), do: "0.00"
 
   defp format_large_number(num) when is_number(num) do
@@ -509,10 +512,12 @@ defmodule ZefyrlabWeb.DashboardComponents do
       true -> "$#{num}"
     end
   end
+
   defp format_large_number(_), do: "$0"
 
   defp format_percentage(value) when is_number(value) do
     "#{Float.round(value * 100, 1)}%"
   end
+
   defp format_percentage(_), do: "0.0%"
 end

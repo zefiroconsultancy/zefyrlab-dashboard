@@ -60,6 +60,8 @@ defmodule Zefyrlab.Treasury.Indexer do
           {provider_rewards, bond} =
             provider_info(delta, total_bond, info.bond_providers.providers, providers)
 
+          IO.inspect({provider_rewards, bond})
+
           %{
             revenue_rune: acc.revenue_rune + provider_rewards,
             total_bond: acc.total_bond + bond
@@ -74,6 +76,8 @@ defmodule Zefyrlab.Treasury.Indexer do
   defp provider_info(delta, total_bond, providers_info, providers)
        when total_bond > 0 and is_list(providers_info) do
     providers_set = MapSet.new(providers)
+
+    IO.inspect({delta, total_bond, providers_info, providers})
 
     Enum.reduce(providers_info, {0, 0}, fn
       %{bond: provider_bond, bond_address: addr}, {reward_acc, bond_acc}
