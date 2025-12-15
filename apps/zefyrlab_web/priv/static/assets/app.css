@@ -798,10 +798,6 @@ select {
   margin-top: 0.375rem;
 }
 
-.mt-6 {
-  margin-top: 1.5rem;
-}
-
 .block {
   display: block;
 }
@@ -841,10 +837,6 @@ select {
   height: 3rem;
 }
 
-.h-80 {
-  height: 20rem;
-}
-
 .min-h-6 {
   min-height: 1.5rem;
 }
@@ -863,10 +855,6 @@ select {
 
 .w-full {
   width: 100%;
-}
-
-.min-w-full {
-  min-width: 100%;
 }
 
 .max-w-80 {
@@ -943,10 +931,6 @@ select {
   align-self: flex-start;
 }
 
-.overflow-x-auto {
-  overflow-x: auto;
-}
-
 .text-wrap {
   text-wrap: wrap;
 }
@@ -963,10 +947,6 @@ select {
   border-width: 1px;
 }
 
-.border-b {
-  border-bottom-width: 1px;
-}
-
 .bg-white {
   --tw-bg-opacity: 1;
   background-color: rgb(255 255 255 / var(--tw-bg-opacity));
@@ -977,11 +957,6 @@ select {
   padding-right: 1rem;
 }
 
-.py-2 {
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-}
-
 .py-3 {
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
@@ -989,14 +964,6 @@ select {
 
 .pb-4 {
   padding-bottom: 1rem;
-}
-
-.pr-4 {
-  padding-right: 1rem;
-}
-
-.text-left {
-  text-align: left;
 }
 
 .text-center {
@@ -1803,8 +1770,517 @@ h1.logo-heading .logo-accent {
   }
 }
 
-.last\:border-0:last-child {
-  border-width: 0px;
+/* ============================================================================ */
+
+/* Dashboard Refactor - 6 Section Layout */
+
+/* ============================================================================ */
+
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--s-3);
+}
+
+/* Section 1: Hero Overview */
+
+.hero-overview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-2);
+  margin-bottom: var(--s-5);
+}
+
+.kpi-card-hero {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--s-3);
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpi-card-hero .kpi-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: var(--s-1);
+  font-weight: 500;
+}
+
+.kpi-card-hero .kpi-value {
+  font-size: 24px;
+  font-weight: 600;
+  font-family: var(--font-plex-sans);
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.kpi-card-hero .kpi-unit {
+  font-size: 16px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+/* Section 2: Projections & Scenarios */
+
+.projections-section {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+
+.projections-section h2 {
+  font-size: 18px;
+  margin-bottom: var(--s-3);
+}
+
+.scenario-selector {
+  display: flex;
+  gap: var(--s-1);
+  margin-bottom: var(--s-3);
+}
+
+.scenario-selector button {
+  flex: 1;
+  padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font-plex-sans);
+  transition: all 0.2s;
+}
+
+.scenario-selector button:hover {
+  border-color: var(--accent);
+}
+
+.scenario-selector button.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.projection-chart-container {
+  margin-bottom: var(--s-3);
+  height: 250px;
+}
+
+.projection-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.projection-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+}
+
+.projection-kpis .kpi-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--s-1) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.projection-kpis .kpi-row:last-child {
+  border-bottom: none;
+}
+
+.projection-kpis .kpi-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.projection-kpis .kpi-value {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-plex-sans);
+  color: var(--text);
+}
+
+.projections-section .note {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  margin: 0;
+}
+
+/* Section 3: Network Metrics */
+
+.network-metrics {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+
+.network-metrics h2 {
+  font-size: 18px;
+  margin-bottom: var(--s-3);
+}
+
+.dual-axis-chart-container {
+  height: 300px;
+  margin-bottom: var(--s-3);
+}
+
+.dual-axis-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--s-2);
+}
+
+.metrics-row .metric-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metrics-row .metric-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.metrics-row .metric-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-plex-sans);
+  color: var(--text);
+}
+
+/* Section 4: Treasury Balances */
+
+.treasury-balances {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+
+.treasury-balances h2 {
+  font-size: 18px;
+  margin-bottom: var(--s-3);
+}
+
+.currency-toggle {
+  display: inline-flex;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  margin-bottom: var(--s-3);
+}
+
+.currency-toggle button {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-plex-sans);
+  transition: all 0.2s;
+}
+
+.currency-toggle button.active {
+  background: var(--accent);
+  color: white;
+}
+
+.stacked-area-chart-container {
+  height: 300px;
+  margin-bottom: var(--s-3);
+}
+
+.stacked-area-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.balances-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.balances-table .balance-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--s-1) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.balances-table .balance-row:last-child {
+  border-bottom: none;
+}
+
+.balances-table .balance-row.total {
+  font-weight: 600;
+  padding-top: var(--s-2);
+  margin-top: var(--s-1);
+  border-top: 2px solid var(--border);
+}
+
+.balances-table .label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.balances-table .value {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-plex-sans);
+  color: var(--text);
+}
+
+/* Section 5: Realized Rewards */
+
+.realized-rewards {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+
+.realized-rewards h2 {
+  font-size: 18px;
+  margin-bottom: var(--s-3);
+}
+
+.rewards-bonded-chart-container {
+  height: 300px;
+  margin-bottom: var(--s-3);
+}
+
+.rewards-bonded-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.cumulative-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-3);
+}
+
+.cumulative-stats .stat-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cumulative-stats .stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.cumulative-stats .stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: var(--font-plex-sans);
+  color: var(--text);
+}
+
+/* Section 6: Capital Flows */
+
+.capital-flows {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+
+.capital-flows h2 {
+  font-size: 18px;
+  margin-bottom: var(--s-3);
+}
+
+.stacked-bar-chart-container {
+  height: 300px;
+  margin-bottom: var(--s-3);
+}
+
+.stacked-bar-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.flow-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+
+.flow-metrics .metric-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.flow-metrics .metric-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.flow-metrics .metric-value {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font-plex-sans);
+  color: var(--text);
+}
+
+.flows-table {
+  overflow-x: auto;
+}
+
+.flows-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.flows-table thead {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.flows-table th {
+  text-align: left;
+  padding: var(--s-1) var(--s-2);
+  font-weight: 600;
+  font-family: var(--font-plex-sans);
+  color: var(--text);
+  border-bottom: 2px solid var(--border);
+}
+
+.flows-table td {
+  padding: var(--s-1) var(--s-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.flows-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.flows-table td.positive {
+  color: #10B981;
+}
+
+.flows-table td.negative {
+  color: #EF4444;
+}
+
+/* General Section Styles */
+
+section {
+  margin-bottom: var(--s-4);
+}
+
+section h2 {
+  font-family: var(--font-plex-sans);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+/* Mobile Responsive */
+
+@media (max-width: 1024px) {
+  .hero-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .projection-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: var(--s-2);
+  }
+
+  .hero-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .scenario-selector {
+    flex-direction: column;
+  }
+
+  .scenario-selector button {
+    width: 100%;
+  }
+
+  .projection-chart-container,
+  .dual-axis-chart-container,
+  .stacked-area-chart-container,
+  .rewards-bonded-chart-container,
+  .stacked-bar-chart-container {
+    height: 250px;
+  }
+
+  .metrics-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cumulative-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .flows-table {
+    font-size: 11px;
+  }
+
+  .flows-table th,
+  .flows-table td {
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-card-hero .kpi-value {
+    font-size: 20px;
+  }
+
+  section h2 {
+    font-size: 16px;
+  }
 }
 
 .hover\:cursor-pointer:hover {
@@ -1866,11 +2342,5 @@ h1.logo-heading .logo-accent {
     --tw-scale-x: .95;
     --tw-scale-y: .95;
     transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
-  }
-}
-
-@media (min-width: 768px) {
-  .md\:h-96 {
-    height: 24rem;
   }
 }

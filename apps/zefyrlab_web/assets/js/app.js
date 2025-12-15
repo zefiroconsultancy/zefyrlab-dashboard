@@ -9,7 +9,8 @@ import Chart from "../vendor/chart.umd"
 
 // Chart Hooks - data comes from Elixir LiveView
 const ChartHooks = {
-  BondedChart: {
+  // Section 2: Projection Chart (5-year NAV line)
+  ProjectionChart: {
     mounted() {
       const chartData = JSON.parse(this.el.dataset.chart);
       const ctx = this.el.getContext('2d');
@@ -20,12 +21,13 @@ const ChartHooks = {
         data: {
           labels: chartData.labels,
           datasets: [{
-            label: 'Bonded Capital (RUNE)',
-            data: chartData.data,
+            label: 'Projected NAV',
+            data: chartData.nav,
             borderColor: '#1C7ED6',
             backgroundColor: 'rgba(28, 126, 214, 0.1)',
             fill: true,
-            tension: 0.4
+            tension: 0.4,
+            borderWidth: 2
           }]
         },
         options: {
@@ -33,26 +35,20 @@ const ChartHooks = {
           maintainAspectRatio: false,
           devicePixelRatio: window.devicePixelRatio || 2,
           plugins: {
-            legend: {
-              display: false
-            },
+            legend: { display: false },
             tooltip: {
               mode: 'index',
-              intersect: false
+              intersect: false,
+              callbacks: {
+                label: (context) => '$' + (context.parsed.y / 1000000).toFixed(1) + 'M'
+              }
             }
-          },
-          interaction: {
-            mode: 'nearest',
-            axis: 'x',
-            intersect: false
           },
           scales: {
             y: {
               beginAtZero: false,
               ticks: {
-                callback: function(value) {
-                  return (value / 1000000).toFixed(1) + 'M';
-                }
+                callback: (value) => '$' + (value / 1000000).toFixed(1) + 'M'
               }
             }
           }
@@ -63,7 +59,7 @@ const ChartHooks = {
       const chartData = JSON.parse(this.el.dataset.chart);
       this.resizeCanvas();
       this.chart.data.labels = chartData.labels;
-      this.chart.data.datasets[0].data = chartData.data;
+      this.chart.data.datasets[0].data = chartData.nav;
       this.chart.update();
     },
     resizeCanvas() {
@@ -74,7 +70,8 @@ const ChartHooks = {
     }
   },
 
-  RewardsChart: {
+  // Section 3: Dual Axis Chart (TVL line + Volume bars)
+  DualAxisChart: {
     mounted() {
       const chartData = JSON.parse(this.el.dataset.chart);
       const ctx = this.el.getContext('2d');
@@ -86,14 +83,21 @@ const ChartHooks = {
           labels: chartData.labels,
           datasets: [
             {
-              label: 'Actual Rewards',
-              data: chartData.actual,
-              backgroundColor: '#1C7ED6'
+              type: 'bar',
+              label: 'Volume',
+              data: chartData.volume,
+              backgroundColor: 'rgba(28, 126, 214, 0.6)',
+              yAxisID: 'y'
             },
             {
-              label: 'Projected Rewards',
-              data: chartData.projected,
-              backgroundColor: '#E5E7EB'
+              type: 'line',
+              label: 'TVL',
+              data: chartData.tvl,
+              borderColor: '#10B981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: false,
+              tension: 0.4,
+              yAxisID: 'y1'
             }
           ]
         },
@@ -101,27 +105,37 @@ const ChartHooks = {
           responsive: true,
           maintainAspectRatio: false,
           devicePixelRatio: window.devicePixelRatio || 2,
-          plugins: {
-            legend: {
-              position: 'top',
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            }
-          },
           interaction: {
-            mode: 'nearest',
-            axis: 'x',
+            mode: 'index',
             intersect: false
+          },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const val = context.parsed.y;
+                  return context.dataset.label + ': $' + (val / 1000000).toFixed(2) + 'M';
+                }
+              }
+            }
           },
           scales: {
             y: {
-              beginAtZero: true,
+              type: 'linear',
+              position: 'left',
+              title: { display: true, text: 'Volume ($)' },
               ticks: {
-                callback: function(value) {
-                  return '$' + (value / 1000).toFixed(0) + 'k';
-                }
+                callback: (value) => '$' + (value / 1000000).toFixed(0) + 'M'
+              }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              title: { display: true, text: 'TVL ($)' },
+              grid: { drawOnChartArea: false },
+              ticks: {
+                callback: (value) => '$' + (value / 1000000).toFixed(0) + 'M'
               }
             }
           }
@@ -132,8 +146,8 @@ const ChartHooks = {
       const chartData = JSON.parse(this.el.dataset.chart);
       this.resizeCanvas();
       this.chart.data.labels = chartData.labels;
-      this.chart.data.datasets[0].data = chartData.actual;
-      this.chart.data.datasets[1].data = chartData.projected;
+      this.chart.data.datasets[0].data = chartData.volume;
+      this.chart.data.datasets[1].data = chartData.tvl;
       this.chart.update();
     },
     resizeCanvas() {
@@ -144,7 +158,8 @@ const ChartHooks = {
     }
   },
 
-  IncomeChart: {
+  // Section 4: Stacked Area Chart (Wallet + Bonded + Cashflow line)
+  StackedAreaChart: {
     mounted() {
       const chartData = JSON.parse(this.el.dataset.chart);
       const ctx = this.el.getContext('2d');
@@ -154,39 +169,67 @@ const ChartHooks = {
         type: 'line',
         data: {
           labels: chartData.labels,
-          datasets: [{
-            label: 'Cumulative Net Income',
-            data: chartData.data,
-            borderColor: '#10B981',
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            fill: true,
-            tension: 0.4
-          }]
+          datasets: [
+            {
+              label: 'Wallet',
+              data: chartData.wallet,
+              backgroundColor: 'rgba(28, 126, 214, 0.5)',
+              borderColor: '#1C7ED6',
+              fill: true,
+              tension: 0.4
+            },
+            {
+              label: 'Bonded',
+              data: chartData.bonded,
+              backgroundColor: 'rgba(16, 185, 129, 0.5)',
+              borderColor: '#10B981',
+              fill: true,
+              tension: 0.4
+            },
+            {
+              type: 'line',
+              label: 'Net Cashflow',
+              data: chartData.net_cashflow,
+              borderColor: '#F59E0B',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0
+            }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           devicePixelRatio: window.devicePixelRatio || 2,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            }
-          },
           interaction: {
-            mode: 'nearest',
-            axis: 'x',
+            mode: 'index',
             intersect: false
+          },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const val = context.parsed.y;
+                  if (context.datasetIndex === 2) {
+                    return context.dataset.label + ': $' + val.toLocaleString();
+                  }
+                  return context.dataset.label + ': ' + val.toLocaleString();
+                }
+              }
+            }
           },
           scales: {
             y: {
+              stacked: true,
               beginAtZero: true,
               ticks: {
-                callback: function(value) {
-                  return '$' + (value / 1000).toFixed(0) + 'k';
+                callback: (value) => {
+                  if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+                  if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
+                  return '$' + value;
                 }
               }
             }
@@ -198,7 +241,9 @@ const ChartHooks = {
       const chartData = JSON.parse(this.el.dataset.chart);
       this.resizeCanvas();
       this.chart.data.labels = chartData.labels;
-      this.chart.data.datasets[0].data = chartData.data;
+      this.chart.data.datasets[0].data = chartData.wallet;
+      this.chart.data.datasets[1].data = chartData.bonded;
+      this.chart.data.datasets[2].data = chartData.net_cashflow;
       this.chart.update();
     },
     resizeCanvas() {
@@ -209,7 +254,8 @@ const ChartHooks = {
     }
   },
 
-  CostsChart: {
+  // Section 5: Rewards vs Bonded Chart (bars + line + secondary axis)
+  RewardsBondedChart: {
     mounted() {
       const chartData = JSON.parse(this.el.dataset.chart);
       const ctx = this.el.getContext('2d');
@@ -219,36 +265,168 @@ const ChartHooks = {
         type: 'bar',
         data: {
           labels: chartData.labels,
-          datasets: [{
-            label: 'Costs',
-            data: chartData.data,
-            backgroundColor: '#EF4444'
-          }]
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Rewards (RUNE)',
+              data: chartData.rewards,
+              backgroundColor: 'rgba(28, 126, 214, 0.6)',
+              yAxisID: 'y'
+            },
+            {
+              type: 'line',
+              label: 'Bonded Capital (RUNE)',
+              data: chartData.bonded,
+              borderColor: '#10B981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: false,
+              tension: 0.4,
+              yAxisID: 'y'
+            },
+            {
+              type: 'line',
+              label: 'Daily Return %',
+              data: chartData.daily_return_pct,
+              borderColor: '#F59E0B',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              fill: false,
+              tension: 0.4,
+              yAxisID: 'y1',
+              pointRadius: 0
+            }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           devicePixelRatio: window.devicePixelRatio || 2,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            }
-          },
           interaction: {
-            mode: 'nearest',
-            axis: 'x',
+            mode: 'index',
             intersect: false
+          },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const val = context.parsed.y;
+                  if (context.datasetIndex === 2) {
+                    return context.dataset.label + ': ' + val.toFixed(2) + '%';
+                  }
+                  return context.dataset.label + ': ' + val.toLocaleString();
+                }
+              }
+            }
           },
           scales: {
             y: {
-              beginAtZero: true,
+              type: 'linear',
+              position: 'left',
+              title: { display: true, text: 'RUNE' },
               ticks: {
-                callback: function(value) {
-                  return '$' + (value / 1000).toFixed(0) + 'k';
+                callback: (value) => value.toLocaleString()
+              }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              title: { display: true, text: 'Daily Return %' },
+              grid: { drawOnChartArea: false },
+              ticks: {
+                callback: (value) => value.toFixed(2) + '%'
+              }
+            }
+          }
+        }
+      });
+    },
+    updated() {
+      const chartData = JSON.parse(this.el.dataset.chart);
+      this.resizeCanvas();
+      this.chart.data.labels = chartData.labels;
+      this.chart.data.datasets[0].data = chartData.rewards;
+      this.chart.data.datasets[1].data = chartData.bonded;
+      this.chart.data.datasets[2].data = chartData.daily_return_pct;
+      this.chart.update();
+    },
+    resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = this.el.getBoundingClientRect();
+      this.el.width = rect.width * dpr;
+      this.el.height = rect.height * dpr;
+    }
+  },
+
+  // Section 6: Stacked Bar Chart (Capital + Rewards + Costs + Net line)
+  StackedBarChart: {
+    mounted() {
+      const chartData = JSON.parse(this.el.dataset.chart);
+      const ctx = this.el.getContext('2d');
+      this.resizeCanvas();
+
+      this.chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.labels,
+          datasets: [
+            {
+              label: 'Capital In',
+              data: chartData.capital_in,
+              backgroundColor: 'rgba(59, 130, 246, 0.6)',
+              stack: 'flows'
+            },
+            {
+              label: 'Rewards',
+              data: chartData.rewards,
+              backgroundColor: 'rgba(16, 185, 129, 0.6)',
+              stack: 'flows'
+            },
+            {
+              label: 'Costs',
+              data: chartData.costs,
+              backgroundColor: 'rgba(239, 68, 68, 0.6)',
+              stack: 'flows'
+            },
+            {
+              type: 'line',
+              label: 'Net Cashflow',
+              data: chartData.net_cashflow,
+              borderColor: '#F59E0B',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              fill: false,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          devicePixelRatio: window.devicePixelRatio || 2,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  const val = context.parsed.y;
+                  return context.dataset.label + ': $' + val.toLocaleString();
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              stacked: true,
+              ticks: {
+                callback: (value) => {
+                  if (value >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+                  if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
+                  return '$' + value;
                 }
               }
             }
@@ -260,7 +438,10 @@ const ChartHooks = {
       const chartData = JSON.parse(this.el.dataset.chart);
       this.resizeCanvas();
       this.chart.data.labels = chartData.labels;
-      this.chart.data.datasets[0].data = chartData.data;
+      this.chart.data.datasets[0].data = chartData.capital_in;
+      this.chart.data.datasets[1].data = chartData.rewards;
+      this.chart.data.datasets[2].data = chartData.costs;
+      this.chart.data.datasets[3].data = chartData.net_cashflow;
       this.chart.update();
     },
     resizeCanvas() {
