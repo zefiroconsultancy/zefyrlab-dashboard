@@ -9,6 +9,7 @@ defmodule Zefyrlab.Dashboard do
   alias Zefyrlab.NetworkMetrics.Bin, as: NetworkBin
   alias Zefyrlab.Treasury.Bin, as: TreasuryBin
   alias Zefyrlab.Repo
+  alias Zefyrlab.Projections
   alias Decimal, as: D
 
   # ============================================================================
@@ -115,34 +116,30 @@ defmodule Zefyrlab.Dashboard do
   Returns chart data + KPIs (FY1 income, raise size/timing, multiple, IRR)
   """
   def projection_data(scenario \\ "base") do
-    scenarios = %{
-      "downside" => %{
-        chart: projection_chart_downside(),
-        fy1_net_income: "$850K",
-        raise_size: "$2.5M",
-        raise_timing: "Q4 2026",
-        money_multiple: "2.1x",
-        irr_5y: "15.8%"
-      },
-      "base" => %{
-        chart: projection_chart_base(),
-        fy1_net_income: "$1.2M",
-        raise_size: "$3.5M",
-        raise_timing: "Q2 2026",
-        money_multiple: "3.2x",
-        irr_5y: "26.4%"
-      },
-      "upside" => %{
-        chart: projection_chart_upside(),
-        fy1_net_income: "$1.8M",
-        raise_size: "$5.0M",
-        raise_timing: "Q1 2026",
-        money_multiple: "4.5x",
-        irr_5y: "35.2%"
-      }
-    }
+    # Convert string scenario to atom matching projection scenarios
+    scenario_atom =
+      case scenario do
+        "base" -> :base_case
+        "upside" -> :upside_case
+        "downside" -> :conservative_case
+        _ -> :base_case
+      end
 
-    Map.get(scenarios, scenario, scenarios["base"])
+    # Calculate projections dynamically from current metrics
+    projections = Projections.calculate_scenario(scenario_atom)
+    first_year = List.first(projections) || %{}
+
+    %{
+      chart: %{
+        labels: Enum.map(projections, & &1.year |> to_string()),
+        nav: Enum.map(projections, & &1.projected_valuation)
+      },
+      fy1_net_income: format_currency(first_year[:projected_net_income] || 0.0),
+      raise_size: "N/A",
+      raise_timing: "N/A",
+      money_multiple: format_float(first_year[:money_multiple] || 0.0, 1) <> "x",
+      irr_5y: format_float(first_year[:irr_5y] || 0.0, 1) <> "%"
+    }
   end
 
   # ============================================================================
@@ -454,28 +451,6 @@ defmodule Zefyrlab.Dashboard do
     end)
   end
 
-  # Mocked projection chart data
-  defp projection_chart_downside do
-    %{
-      labels: ["2025", "2026", "2027", "2028", "2029", "2030"],
-      nav: [2_500_000, 3_200_000, 4_100_000, 5_200_000, 6_500_000, 8_100_000]
-    }
-  end
-
-  defp projection_chart_base do
-    %{
-      labels: ["2025", "2026", "2027", "2028", "2029", "2030"],
-      nav: [2_500_000, 3_800_000, 5_500_000, 7_800_000, 10_800_000, 14_500_000]
-    }
-  end
-
-  defp projection_chart_upside do
-    %{
-      labels: ["2025", "2026", "2027", "2028", "2029", "2030"],
-      nav: [2_500_000, 4_500_000, 7_500_000, 12_000_000, 18_500_000, 27_000_000]
-    }
-  end
-
   # Formatting helpers
   defp format_label(%{bin: %DateTime{} = dt}), do: dt |> DateTime.to_date() |> Date.to_string()
 
@@ -496,9 +471,21 @@ defmodule Zefyrlab.Dashboard do
     :erlang.float_to_binary(value, decimals: 1) <> "%"
   end
 
+  defp format_float(value, decimals) when is_number(value) and is_integer(decimals) do
+    :erlang.float_to_binary(value, decimals: decimals)
+  end
+
+  defp format_float(_, _), do: "0.0"
+
   defp format_currency(amount) when is_integer(amount) do
     "$" <> format_number(amount)
   end
+
+  defp format_currency(amount) when is_float(amount) do
+    "$" <> format_number(trunc(amount))
+  end
+
+  defp format_currency(_), do: "$0"
 
   defp format_currency_decimal(%D{} = amount) do
     amount |> D.to_float() |> usd_to_decimal() |> trunc() |> format_currency()
