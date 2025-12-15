@@ -48,10 +48,19 @@ defmodule Zefyrlab.NetworkMetrics do
   end
 
   def update_bins(entry, time) do
-    time
+    result = time
     |> Resolution.active()
     |> Enum.map(&to_bin(entry, &1))
     |> Bin.update()
+
+    # Broadcast to LiveView subscribers
+    Phoenix.PubSub.broadcast(
+      Zefyrlab.PubSub,
+      "dashboard:metrics",
+      {:metrics_updated, %{}}
+    )
+
+    result
   end
 
   defp to_bin(entry, {resolution, bin}) do
