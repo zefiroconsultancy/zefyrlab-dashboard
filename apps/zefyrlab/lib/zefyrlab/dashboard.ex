@@ -5,6 +5,7 @@ defmodule Zefyrlab.Dashboard do
   """
 
   import Ecto.Query
+  import Zefyrlab.Formatters
 
   alias Zefyrlab.NetworkMetrics.Bin, as: NetworkBin
   alias Zefyrlab.Treasury.Bin, as: TreasuryBin
@@ -28,8 +29,8 @@ defmodule Zefyrlab.Dashboard do
     bonded
     |> D.add(wallet)
     |> D.to_float()
-    # Convert from base units to actual USD
-    |> usd_to_decimal()
+    # Convert from base units to actual value
+    |> to_decimal()
     |> trunc()
     |> format_currency()
   end
@@ -43,8 +44,8 @@ defmodule Zefyrlab.Dashboard do
 
     ytd_sum
     |> D.to_float()
-    # Convert from base units to actual USD
-    |> usd_to_decimal()
+    # Convert from base units to actual value
+    |> to_decimal()
     |> trunc()
     |> format_currency()
   end
@@ -59,15 +60,15 @@ defmodule Zefyrlab.Dashboard do
         "0.0%"
 
       bins ->
-        # Convert RUNE base units to decimal
+        # Convert base units to decimal
         total_rewards_rune =
           Enum.reduce(bins, 0.0, fn bin, acc ->
-            acc + rune_to_decimal(bin.revenue_inflows_rune || 0)
+            acc + to_decimal(bin.revenue_inflows_rune || 0)
           end)
 
         avg_bonded_rune =
           Enum.reduce(bins, 0.0, fn bin, acc ->
-            acc + rune_to_decimal(bin.bonded_rune || 0)
+            acc + to_decimal(bin.bonded_rune || 0)
           end) / length(bins)
 
         if avg_bonded_rune > 0 do
@@ -98,8 +99,8 @@ defmodule Zefyrlab.Dashboard do
     result.capital_in
     |> D.sub(result.costs_out)
     |> D.to_float()
-    # Convert from base units to actual USD
-    |> usd_to_decimal()
+    # Convert from base units to actual value
+    |> to_decimal()
     |> trunc()
     |> format_currency()
   rescue
@@ -156,8 +157,8 @@ defmodule Zefyrlab.Dashboard do
     %{
       chart: %{
         labels: Enum.map(bins, &format_label/1),
-        tvl: Enum.map(bins, &usd_to_decimal(&1.tvl || 0)),
-        volume: Enum.map(bins, &usd_to_decimal(&1.volume || 0)),
+        tvl: Enum.map(bins, &to_decimal(&1.tvl || 0)),
+        volume: Enum.map(bins, &to_decimal(&1.volume || 0)),
         utilization: Enum.map(bins, &d_to_float(&1.utilization_ratio))
       },
       current: network_current_values(bins),
@@ -182,9 +183,9 @@ defmodule Zefyrlab.Dashboard do
         %{
           chart: %{
             labels: Enum.map(bins, &format_label/1),
-            wallet: Enum.map(bins, &rune_to_decimal(&1.wallet_rune || 0)),
-            bonded: Enum.map(bins, &rune_to_decimal(&1.bonded_rune || 0)),
-            net_cashflow: Enum.map(bins, &rune_to_decimal(&1.net_cashflow_rune || 0))
+            wallet: Enum.map(bins, &to_decimal(&1.wallet_rune || 0)),
+            bonded: Enum.map(bins, &to_decimal(&1.bonded_rune || 0)),
+            net_cashflow: Enum.map(bins, &to_decimal(&1.net_cashflow_rune || 0))
           },
           table: latest_balances_table(bins, :rune)
         }
@@ -193,9 +194,9 @@ defmodule Zefyrlab.Dashboard do
         %{
           chart: %{
             labels: Enum.map(bins, &format_label/1),
-            wallet: Enum.map(bins, &usd_to_decimal(d_to_float(&1.wallet_rune_usd))),
-            bonded: Enum.map(bins, &usd_to_decimal(d_to_float(&1.bonded_rune_usd))),
-            net_cashflow: Enum.map(bins, &usd_to_decimal(d_to_float(&1.net_cashflow_usd)))
+            wallet: Enum.map(bins, &to_decimal(d_to_float(&1.wallet_rune_usd))),
+            bonded: Enum.map(bins, &to_decimal(d_to_float(&1.bonded_rune_usd))),
+            net_cashflow: Enum.map(bins, &to_decimal(d_to_float(&1.net_cashflow_usd)))
           },
           table: latest_balances_table(bins, :usd)
         }
@@ -216,8 +217,8 @@ defmodule Zefyrlab.Dashboard do
     %{
       chart: %{
         labels: Enum.map(bins, &format_label/1),
-        rewards: Enum.map(bins, &rune_to_decimal(&1.revenue_inflows_rune || 0)),
-        bonded: Enum.map(bins, &rune_to_decimal(&1.bonded_rune || 0)),
+        rewards: Enum.map(bins, &to_decimal(&1.revenue_inflows_rune || 0)),
+        bonded: Enum.map(bins, &to_decimal(&1.bonded_rune || 0)),
         daily_return_pct: Enum.map(bins, &calculate_daily_return_pct/1)
       },
       cumulative: %{
@@ -242,13 +243,13 @@ defmodule Zefyrlab.Dashboard do
     %{
       chart: %{
         labels: Enum.map(bins, &format_label/1),
-        capital_in: Enum.map(bins, &usd_to_decimal(d_to_float(&1.capital_inflows_usd))),
-        rewards: Enum.map(bins, &usd_to_decimal(d_to_float(&1.revenue_inflows_usd))),
+        capital_in: Enum.map(bins, &to_decimal(d_to_float(&1.capital_inflows_usd))),
+        rewards: Enum.map(bins, &to_decimal(d_to_float(&1.revenue_inflows_usd))),
         costs:
           Enum.map(bins, fn bin ->
-            -1 * usd_to_decimal(d_to_float(bin.cost_outflows_usd))
+            -1 * to_decimal(d_to_float(bin.cost_outflows_usd))
           end),
-        net_cashflow: Enum.map(bins, &usd_to_decimal(d_to_float(&1.net_cashflow_usd)))
+        net_cashflow: Enum.map(bins, &to_decimal(d_to_float(&1.net_cashflow_usd)))
       },
       cost_revenue_ratio: %{
         current: calculate_cost_revenue_ratio(Enum.take(bins, -7)),
@@ -318,15 +319,21 @@ defmodule Zefyrlab.Dashboard do
     |> Repo.all()
   end
 
-  defp network_current_values([]), do: %{tvl: 0, volume: 0, utilization: 0}
+  defp network_current_values([]) do
+    %{
+      tvl: "$0",
+      volume: "$0",
+      utilization: "0.0%"
+    }
+  end
 
   defp network_current_values(bins) do
     latest = List.last(bins)
 
     %{
-      tvl: usd_to_decimal(latest.tvl || 0),
-      volume: usd_to_decimal(latest.volume || 0),
-      utilization: d_to_float(latest.utilization_ratio)
+      tvl: format_large_number(to_decimal(latest.tvl || 0)),
+      volume: format_large_number(to_decimal(latest.volume || 0)),
+      utilization: format_percentage(d_to_float(latest.utilization_ratio))
     }
   end
 
@@ -342,19 +349,25 @@ defmodule Zefyrlab.Dashboard do
     }
   end
 
-  defp calculate_network_avg([]), do: %{tvl: 0, volume: 0, utilization: 0}
+  defp calculate_network_avg([]) do
+    %{
+      tvl: "$0",
+      volume: "$0",
+      utilization: "0.0%"
+    }
+  end
 
   defp calculate_network_avg(bins) do
     count = length(bins)
 
+    avg_tvl = Enum.reduce(bins, 0, fn b, acc -> acc + (b.tvl || 0) end) / count
+    avg_volume = Enum.reduce(bins, 0, fn b, acc -> acc + (b.volume || 0) end) / count
+    avg_utilization = Enum.reduce(bins, 0, fn b, acc -> acc + d_to_float(b.utilization_ratio) end) / count
+
     %{
-      tvl: usd_to_decimal(Enum.reduce(bins, 0, fn b, acc -> acc + (b.tvl || 0) end) / count),
-      volume:
-        usd_to_decimal(Enum.reduce(bins, 0, fn b, acc -> acc + (b.volume || 0) end) / count),
-      utilization:
-        Enum.reduce(bins, 0, fn b, acc ->
-          acc + d_to_float(b.utilization_ratio)
-        end) / count
+      tvl: format_large_number(to_decimal(avg_tvl)),
+      volume: format_large_number(to_decimal(avg_volume)),
+      utilization: format_percentage(avg_utilization)
     }
   end
 
@@ -365,8 +378,8 @@ defmodule Zefyrlab.Dashboard do
 
     case currency do
       :rune ->
-        wallet_rune = rune_to_decimal(latest.wallet_rune || 0)
-        bonded_rune = rune_to_decimal(latest.bonded_rune || 0)
+        wallet_rune = to_decimal(latest.wallet_rune || 0)
+        bonded_rune = to_decimal(latest.bonded_rune || 0)
         total_rune = wallet_rune + bonded_rune
 
         %{
@@ -376,8 +389,8 @@ defmodule Zefyrlab.Dashboard do
         }
 
       :usd ->
-        wallet_usd = usd_to_decimal(d_to_float(latest.wallet_rune_usd))
-        bonded_usd = usd_to_decimal(d_to_float(latest.bonded_rune_usd))
+        wallet_usd = to_decimal(d_to_float(latest.wallet_rune_usd))
+        bonded_usd = to_decimal(d_to_float(latest.bonded_rune_usd))
 
         %{
           wallet: format_currency(trunc(wallet_usd)),
@@ -389,9 +402,9 @@ defmodule Zefyrlab.Dashboard do
 
   defp calculate_daily_return_pct(%{revenue_inflows_rune: rewards, bonded_rune: bonded})
        when bonded > 0 do
-    # Convert RUNE base units to decimal
-    rewards_rune = rune_to_decimal(rewards)
-    bonded_rune = rune_to_decimal(bonded)
+    # Convert base units to decimal
+    rewards_rune = to_decimal(rewards)
+    bonded_rune = to_decimal(bonded)
     rewards_rune / bonded_rune * 100
   end
 
@@ -406,7 +419,7 @@ defmodule Zefyrlab.Dashboard do
     |> Enum.reduce(0, fn bin, acc ->
       acc + (bin.revenue_inflows_rune || 0)
     end)
-    |> rune_to_decimal()
+    |> format_rune()
   end
 
   defp ltm_revenue_sum(bins) do
@@ -415,7 +428,7 @@ defmodule Zefyrlab.Dashboard do
     |> Enum.reduce(0, fn bin, acc ->
       acc + (bin.revenue_inflows_rune || 0)
     end)
-    |> rune_to_decimal()
+    |> format_rune()
   end
 
   defp calculate_cost_revenue_ratio([]), do: "0.0%"
@@ -453,81 +466,4 @@ defmodule Zefyrlab.Dashboard do
 
   # Formatting helpers
   defp format_label(%{bin: %DateTime{} = dt}), do: dt |> DateTime.to_date() |> Date.to_string()
-
-  defp format_number(num) when is_integer(num) do
-    num
-    |> Integer.to_string()
-    |> String.graphemes()
-    |> Enum.reverse()
-    |> Enum.chunk_every(3)
-    |> Enum.join(",")
-    |> String.reverse()
-  end
-
-  defp format_number(%D{} = num), do: format_number(D.to_integer(num))
-  defp format_number(nil), do: "0"
-
-  defp format_percentage(value) when is_number(value) do
-    :erlang.float_to_binary(value, decimals: 1) <> "%"
-  end
-
-  defp format_float(value, decimals) when is_number(value) and is_integer(decimals) do
-    :erlang.float_to_binary(value, decimals: decimals)
-  end
-
-  defp format_float(_, _), do: "0.0"
-
-  defp format_currency(amount) when is_integer(amount) do
-    "$" <> format_number(amount)
-  end
-
-  defp format_currency(amount) when is_float(amount) do
-    "$" <> format_number(trunc(amount))
-  end
-
-  defp format_currency(_), do: "$0"
-
-  defp format_currency_decimal(%D{} = amount) do
-    amount |> D.to_float() |> usd_to_decimal() |> trunc() |> format_currency()
-  end
-
-  defp format_currency_decimal(_), do: "$0"
-
-  defp d_to_float(%D{} = val), do: D.to_float(val)
-  defp d_to_float(nil), do: 0
-  defp d_to_float(val) when is_number(val), do: val * 1.0
-
-  # All blockchain amounts stored with 8 decimal places
-  @decimals 100_000_000
-
-  # Convert base units (bigint) to human-readable decimal
-  defp to_decimal(base_units) when is_integer(base_units) do
-    base_units / @decimals
-  end
-
-  defp to_decimal(%D{} = base_units) do
-    D.to_float(base_units) / @decimals
-  end
-
-  defp to_decimal(base_units) when is_float(base_units) do
-    base_units / @decimals
-  end
-
-  defp to_decimal(nil), do: 0.0
-  defp to_decimal(_), do: 0.0
-
-  # Aliases for clarity
-  defp rune_to_decimal(val), do: to_decimal(val)
-  defp usd_to_decimal(val), do: to_decimal(val)
-
-  # Format RUNE amount with proper decimals
-  defp format_rune(rune_base_units) when is_integer(rune_base_units) do
-    rune_base_units
-    |> rune_to_decimal()
-    |> Float.round(2)
-    |> Float.to_string()
-    |> String.replace(~r/\.?0+$/, "")
-  end
-
-  defp format_rune(_), do: "0"
 end

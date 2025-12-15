@@ -1,6 +1,13 @@
 defmodule ZefyrlabWeb.DashboardLive.Index do
   use ZefyrlabWeb, :live_view
-  import ZefyrlabWeb.DashboardComponents
+
+  # Import new modular dashboard components
+  import ZefyrlabWeb.Components.Dashboard.ChartComponent
+  import ZefyrlabWeb.Components.Dashboard.ToggleComponent
+  import ZefyrlabWeb.Components.Dashboard.MetricGrid
+  import ZefyrlabWeb.Components.Dashboard.KpiComponents
+  import ZefyrlabWeb.Components.Dashboard.TableComponents
+
   alias Zefyrlab.Dashboard
 
   @impl true
@@ -22,7 +29,7 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
   end
 
   @impl true
-  def handle_event("change_scenario", %{"scenario" => scenario}, socket) do
+  def handle_event("change_scenario", %{"selected" => scenario}, socket) do
     {:noreply,
      socket
      |> assign(:selected_scenario, scenario)
@@ -30,7 +37,7 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
   end
 
   @impl true
-  def handle_event("toggle_currency", %{"currency" => currency}, socket) do
+  def handle_event("toggle_currency", %{"selected" => currency}, socket) do
     currency_atom = String.to_existing_atom(currency)
 
     {:noreply,
@@ -137,16 +144,35 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
       <section class="projections-section">
         <h2>Projections & Scenarios</h2>
 
-        <.scenario_selector selected={@selected_scenario} />
+        <.toggle_group
+          options={[
+            %{value: "downside", label: "Downside"},
+            %{value: "base", label: "Base"},
+            %{value: "upside", label: "Upside"}
+          ]}
+          selected={@selected_scenario}
+          event="change_scenario"
+          container_class="scenario-selector"
+        />
 
-        <.projection_chart data={@projection_chart_data} />
+        <.chart
+          id="projection-chart"
+          hook="ProjectionChart"
+          data={@projection_chart_data}
+          container_class="projection-chart-container"
+          canvas_class="projection-chart"
+        />
 
-        <.projection_kpis
-          fy1_income={@projection_fy1_income}
-          raise_size={@projection_raise_size}
-          raise_timing={@projection_raise_timing}
-          money_multiple={@projection_money_multiple}
-          irr_5y={@projection_irr_5y}
+        <.metric_grid
+          metrics={[
+            %{label: "FY1 Net Income", value: @projection_fy1_income},
+            %{label: "Next Raise Size", value: @projection_raise_size},
+            %{label: "Next Raise Timing", value: @projection_raise_timing},
+            %{label: "5Y Money Multiple", value: @projection_money_multiple},
+            %{label: "5Y IRR", value: @projection_irr_5y}
+          ]}
+          layout={:rows}
+          container_class="projection-kpis"
         />
 
         <p class="note">Scenarios vary only THORChain TVL growth and liquidity utilization</p>
@@ -156,12 +182,25 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
       <section class="network-metrics">
         <h2>Network Metrics (THORChain Drivers)</h2>
 
-        <.dual_axis_chart data={@network_chart_data} />
+        <.chart
+          id="network-chart"
+          hook="DualAxisChart"
+          data={@network_chart_data}
+          container_class="dual-axis-chart-container"
+          canvas_class="dual-axis-chart"
+        />
 
-        <.metrics_row
-          current={@network_current}
-          avg_7d={@network_avg_7d}
-          avg_30d={@network_avg_30d}
+        <.metric_grid
+          metrics={[
+            %{label: "TVL (Current)", value: @network_current.tvl},
+            %{label: "TVL (7d avg)", value: @network_avg_7d.tvl},
+            %{label: "TVL (30d avg)", value: @network_avg_30d.tvl},
+            %{label: "Volume (Current)", value: @network_current.volume},
+            %{label: "Utilization (Current)", value: @network_current.utilization},
+            %{label: "Utilization (30d avg)", value: @network_avg_30d.utilization}
+          ]}
+          layout={:columns}
+          container_class="metrics-row"
         />
       </section>
 
@@ -169,9 +208,23 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
       <section class="treasury-balances">
         <h2>Treasury Balances Evolution (180 days)</h2>
 
-        <.currency_toggle current={@currency_toggle} />
+        <.toggle_group
+          options={[
+            %{value: "usd", label: "USD"},
+            %{value: "rune", label: "RUNE"}
+          ]}
+          selected={@currency_toggle}
+          event="toggle_currency"
+          container_class="currency-toggle"
+        />
 
-        <.stacked_area_chart data={@balances_chart_data} />
+        <.chart
+          id="balances-chart"
+          hook="StackedAreaChart"
+          data={@balances_chart_data}
+          container_class="stacked-area-chart-container"
+          canvas_class="stacked-area-chart"
+        />
 
         <.balances_table data={@balances_table} />
       </section>
@@ -180,18 +233,44 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
       <section class="realized-rewards">
         <h2>Realized Rewards Breakdown</h2>
 
-        <.rewards_vs_bonded_chart data={@rewards_chart_data} />
+        <.chart
+          id="rewards-chart"
+          hook="RewardsBondedChart"
+          data={@rewards_chart_data}
+          container_class="rewards-bonded-chart-container"
+          canvas_class="rewards-bonded-chart"
+        />
 
-        <.cumulative_stats ytd={@cumulative_ytd} ltm={@cumulative_ltm} />
+        <.metric_grid
+          metrics={[
+            %{label: "Cumulative YTD", value: "#{@cumulative_ytd} RUNE"},
+            %{label: "Cumulative LTM", value: "#{@cumulative_ltm} RUNE"}
+          ]}
+          layout={:columns}
+          container_class="cumulative-stats"
+        />
       </section>
 
       <!-- Section 6: Capital Flows Waterfall -->
       <section class="capital-flows">
         <h2>Capital Flows (90 days)</h2>
 
-        <.stacked_bar_chart data={@flows_chart_data} />
+        <.chart
+          id="flows-chart"
+          hook="StackedBarChart"
+          data={@flows_chart_data}
+          container_class="stacked-bar-chart-container"
+          canvas_class="stacked-bar-chart"
+        />
 
-        <.flow_metrics current={@cost_revenue_ratio_current} ltm={@cost_revenue_ratio_ltm} />
+        <.metric_grid
+          metrics={[
+            %{label: "Cost/Revenue Ratio (Latest)", value: @cost_revenue_ratio_current},
+            %{label: "Cost/Revenue Ratio (LTM)", value: @cost_revenue_ratio_ltm}
+          ]}
+          layout={:columns}
+          container_class="flow-metrics"
+        />
 
         <.flows_table data={@flows_table} />
       </section>
