@@ -1567,8 +1567,9 @@ h1.logo-heading .logo-accent {
 /* ============================================================================ */
 
 .dashboard-container {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
   padding: var(--s-3);
 }
 
