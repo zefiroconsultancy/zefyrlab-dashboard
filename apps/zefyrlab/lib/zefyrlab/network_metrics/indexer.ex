@@ -30,7 +30,7 @@ defmodule Zefyrlab.NetworkMetrics.Indexer do
       NetworkMetrics.update_bins(
         %{
           volume: volume,
-          tvl: Price.value_usd("RUNE", tvl)
+          tvl: Price.value_usd(Assets.from_shortcode("RUNE"), tvl)
         },
         time
       )
@@ -41,10 +41,10 @@ defmodule Zefyrlab.NetworkMetrics.Indexer do
 
   def handle_new_block(_message, state), do: {:noreply, state}
 
-  defp scan_event(%{type: "swap", attributes: %{"coin" => coin, "emit_asset" => emit_asset}}) do
-    with coin <- Assets.parse_asset(coin),
-         emit_asset <- Assets.parse_asset(emit_asset) do
-      Price.value_usd("RUNE", swap_size_rune(coin, emit_asset))
+  defp scan_event(%{attributes: %{"coin" => coin, "emit_asset" => emit_asset}, type: "swap"}) do
+    with {:ok, coin} <- Assets.parse_asset(coin),
+         {:ok, emit_asset} <- Assets.parse_asset(emit_asset) do
+      Price.value_usd(Assets.from_shortcode("RUNE"), swap_size_rune(coin, emit_asset))
     end
   end
 
