@@ -58,11 +58,11 @@ defmodule Zefyrlab.NetworkMetrics do
     now = DateTime.utc_now()
 
     Map.merge(entry, %{
-        id: Bin.id(resolution, bin),
-        resolution: resolution,
-        bin: bin,
-        inserted_at: now,
-        updated_at: now
-      })
+      id: Bin.id(resolution, bin),
+      resolution: resolution,
+      bin: bin,
+      inserted_at: now,
+      updated_at: now
+    })
   end
 end

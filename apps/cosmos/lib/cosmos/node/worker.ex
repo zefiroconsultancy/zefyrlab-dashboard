@@ -24,16 +24,27 @@ defmodule Cosmos.Node.Worker do
      }}
   end
 
-  def connect(addr) do
+  def connect(addr, token) do
+    headers =
+      if token do
+        [
+          {"Authorization", "Bearer #{token}"}
+        ]
+      else
+        []
+      end
+
     if String.ends_with?(addr, ":443") do
       cred = GRPC.Credential.new(ssl: [verify: :verify_none])
 
       GRPC.Stub.connect(addr,
+        headers: headers,
         interceptors: [{GRPC.Client.Interceptors.Logger, level: :debug}],
         cred: cred
       )
     else
       GRPC.Stub.connect(addr,
+        headers: headers,
         interceptors: [{GRPC.Client.Interceptors.Logger, level: :debug}]
       )
     end
@@ -64,13 +75,13 @@ defmodule Cosmos.Node.Worker do
   end
 
   defp do_init(endpoint) do
-    case connect(endpoint) do
+    case connect(endpoint, "HrpecewdrNEw72QqNrHwbozs3Sp4ypg5FwQzD9cDvsDYDcna") do
       {:ok, connection} ->
         Logger.debug("gRPC Connected to #{connection.host}")
         {:ok, connection}
 
       {:error, error} ->
-        Logger.error("gRPC Failed for #{endpoint}, #{error}")
+        Logger.error("gRPC Failed for #{endpoint}, #{inspect(error)}")
         {:stop, :no_connections}
     end
   end

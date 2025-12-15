@@ -24,25 +24,18 @@ config :zefyrlab, ZefyrlabWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 to_list_env = fn
-  nil -> []
+  nil ->
+    []
+
+  "" ->
+    []
+
   str ->
     str
     |> String.split(",", trim: true)
     |> Enum.map(&String.trim/1)
     |> Enum.reject(&(&1 == ""))
 end
-
-treasury_validators =
-  System.get_env("TREASURY_VALIDATORS")
-  |> to_list_env.()
-
-treasury_providers =
-  System.get_env("TREASURY_PROVIDERS")
-  |> to_list_env.()
-
-config :zefyrlab, :treasury,
-  validators: treasury_validators,
-  providers: treasury_providers
 
 if config_env() == :prod do
   database_url =
@@ -138,6 +131,19 @@ if config_env() == :prod do
   #     config :swoosh, :api_client, Swoosh.ApiClient.Req
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+
+  treasury_validators =
+    System.get_env("TREASURY_VALIDATORS")
+    |> to_list_env.()
+
+  treasury_providers =
+    System.get_env("TREASURY_PROVIDERS")
+    |> to_list_env.()
+
+  config :zefyrlab, :treasury,
+    validators: treasury_validators,
+    providers: treasury_providers
+
   if treasury_validators == [] do
     raise """
     TREASURY_VALIDATORS is required (comma-separated node addresses)

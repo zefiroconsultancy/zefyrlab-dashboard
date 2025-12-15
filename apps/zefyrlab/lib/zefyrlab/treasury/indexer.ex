@@ -18,7 +18,7 @@ defmodule Zefyrlab.Treasury.Indexer do
         %{header: %{time: time}, end_block_events: events},
         %{validators: validators, providers: providers} = state
       ) do
-    with {:ok, rune_price} <- rune_price(),
+    with {:ok, rune_price} <- Price.get(Assets.from_shortcode("RUNE")),
          {:ok, nodes_info} <- fetch_nodes(validators) do
       transfers = scan_events(events, providers)
       totals = scan_nodes_info(nodes_info, providers)
@@ -57,11 +57,12 @@ defmodule Zefyrlab.Treasury.Indexer do
 
       case NodeCursor.delta_and_update(address, info.current_award) do
         {:ok, delta} ->
-          provider_rewards = provider_rewards(delta, total_bond, info.bond_providers, providers)
+          {provider_rewards, bond} =
+            provider_info(delta, total_bond, info.bond_providers.providers, providers)
 
           %{
             revenue_rune: acc.revenue_rune + provider_rewards,
-            total_bond: acc.total_bond + total_bond
+            total_bond: acc.total_bond + bond
           }
 
         _ ->
@@ -70,44 +71,39 @@ defmodule Zefyrlab.Treasury.Indexer do
     end)
   end
 
-  defp provider_rewards(0, _total_bond, _providers_info, _providers), do: 0
+  defp provider_info(delta, total_bond, providers_info, providers)
+       when total_bond > 0 and is_list(providers_info) do
+    providers_set = MapSet.new(providers)
 
-  defp provider_rewards(delta, total_bond, providers_info, providers) when total_bond > 0 do
-    providers_list = providers_info && providers_info.providers || []
-    providers = providers || []
+    Enum.reduce(providers_info, {0, 0}, fn
+      %{bond: provider_bond, bond_address: addr}, {reward_acc, bond_acc}
+      when is_integer(provider_bond) and provider_bond > 0 ->
+        if MapSet.member?(providers_set, addr) do
+          {
+            reward_acc + reward_share(delta, provider_bond, total_bond),
+            bond_acc + provider_bond
+          }
+        else
+          {reward_acc, bond_acc}
+        end
 
-    providers_for_share =
-      if providers == [] do
-        providers_list
-      else
-        Enum.filter(providers_list, &(&1.bond_address in providers))
-      end
-
-    providers_for_share
-    |> Enum.reduce(0, fn %{bond: bond}, acc ->
-      acc + reward_share(delta, bond, total_bond)
+      _other, acc ->
+        acc
     end)
   end
 
-  defp provider_rewards(_delta, _total_bond, _providers_info, _providers), do: 0
+  defp provider_info(_delta, _total_bond, _providers_info, _providers), do: {0, 0}
 
   defp reward_share(delta, provider_bond, total_bond) when total_bond > 0 do
     delta
     |> Decimal.new()
-    |> Decimal.mult(Decimal.new(provider_bond || 0))
+    |> Decimal.mult(Decimal.new(provider_bond))
     |> Decimal.div(Decimal.new(total_bond))
     |> Decimal.round(0, :floor)
     |> Decimal.to_integer()
   end
 
   defp reward_share(_delta, _provider_bond, _total_bond), do: 0
-
-  defp rune_price do
-    case Price.get(Assets.from_shortcode("RUNE")) do
-      {:ok, price} -> {:ok, price}
-      other -> other
-    end
-  end
 
   defp scan_events(events, providers) do
     providers = providers || []

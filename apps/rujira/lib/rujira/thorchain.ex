@@ -352,7 +352,8 @@ defmodule Rujira.Thorchain do
   end
 
   def node_info(address) do
-    with {:ok, %QueryNodeResponse{} = node_info} <- Rujira.Node.query(&Q.node/2, %QueryNodeRequest{address: address}) do
+    with {:ok, %QueryNodeResponse{} = node_info} <-
+           Rujira.Node.query(&Q.node/2, %QueryNodeRequest{address: address}) do
       {:ok, cast_node_info(node_info)}
     end
   end

@@ -27,7 +27,7 @@ defmodule Zefyrlab.Treasury.NodeCursor do
         |> lock("FOR UPDATE")
         |> Repo.one()
 
-      last = cursor && cursor.last_award_rune || Decimal.new(0)
+      last = (cursor && cursor.last_award_rune) || Decimal.new(0)
       current = Decimal.new(current_award || 0)
 
       delta =

@@ -110,14 +110,11 @@ defmodule Zefyrlab.Treasury.Bin do
         set: [
           rune_usd_price: fragment("EXCLUDED.rune_usd_price"),
           bonded_rune: fragment("EXCLUDED.bonded_rune"),
-          bonded_rune_usd:
-            fragment("EXCLUDED.rune_usd_price * EXCLUDED.bonded_rune"),
+          bonded_rune_usd: fragment("EXCLUDED.rune_usd_price * EXCLUDED.bonded_rune"),
           wallet_rune: fragment("EXCLUDED.wallet_rune"),
-          wallet_rune_usd:
-            fragment("EXCLUDED.rune_usd_price * EXCLUDED.wallet_rune"),
+          wallet_rune_usd: fragment("EXCLUDED.rune_usd_price * EXCLUDED.wallet_rune"),
           total_rune: fragment("EXCLUDED.total_rune"),
-          total_rune_usd:
-            fragment("EXCLUDED.rune_usd_price * EXCLUDED.total_rune"),
+          total_rune_usd: fragment("EXCLUDED.rune_usd_price * EXCLUDED.total_rune"),
           capital_inflows_rune:
             fragment("EXCLUDED.capital_inflows_rune + COALESCE(?, 0)", b.capital_inflows_rune),
           revenue_inflows_rune:
@@ -137,8 +134,7 @@ defmodule Zefyrlab.Treasury.Bin do
               b.revenue_inflows_rune,
               b.cost_outflows_rune
             ),
-          net_change_assets_rune:
-            fragment("EXCLUDED.total_rune - COALESCE(?, 0)", b.total_rune),
+          net_change_assets_rune: fragment("EXCLUDED.total_rune - COALESCE(?, 0)", b.total_rune),
           capital_inflows_usd:
             fragment(
               "EXCLUDED.rune_usd_price * (EXCLUDED.capital_inflows_rune + COALESCE(?, 0))",

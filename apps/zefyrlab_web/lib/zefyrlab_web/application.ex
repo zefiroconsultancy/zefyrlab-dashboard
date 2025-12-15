@@ -7,6 +7,15 @@ defmodule ZefyrlabWeb.Application do
 
   @impl true
   def start(_type, _args) do
+    # Ensure backend app (Repo, indexers, etc.) is running when web starts.
+    case Application.ensure_all_started(:zefyrlab) do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        raise "Failed to start :zefyrlab app: #{inspect(reason)}"
+    end
+
     children = [
       ZefyrlabWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:zefyrlab_web, :dns_cluster_query) || :ignore},

@@ -21,7 +21,17 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
      |> assign(:growth_factor, 1.0)
      |> assign(:time_range, "all_time")
      |> load_metrics()
-     |> load_projections()}
+     |> assign_chart_data()}
+  end
+
+  @impl true
+  def handle_event("change_time_range", %{"selected" => time_range}, socket) do
+    effective_range = if time_range == "" or is_nil(time_range), do: "all_time", else: time_range
+
+    {:noreply,
+     socket
+     |> assign(:time_range, effective_range)
+     |> assign_chart_data()}
   end
 
   @impl true
@@ -85,16 +95,6 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
   end
 
   @impl true
-  def handle_event("change_time_range", %{"selected" => time_range}, socket) do
-    effective_range = if time_range == "" or is_nil(time_range), do: "all_time", else: time_range
-
-    {:noreply,
-     socket
-     |> assign(:time_range, effective_range)
-     |> assign_chart_data()}
-  end
-
-  @impl true
   def handle_info({:metrics_updated, _metrics}, socket) do
     {:noreply, load_metrics(socket)}
   end
@@ -112,13 +112,17 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
   end
 
   defp assign_chart_data(socket) do
-    chart_data = Dashboard.chart_data(socket.assigns.time_range)
+    data = Dashboard.chart_data(socket.assigns.time_range)
 
     socket
-    |> assign(:bonded_chart_data, Jason.encode!(chart_data.bonded))
-    |> assign(:rewards_chart_data, Jason.encode!(chart_data.rewards))
-    |> assign(:income_chart_data, Jason.encode!(chart_data.income))
-    |> assign(:costs_chart_data, Jason.encode!(chart_data.costs))
+    |> assign(:volume_tvl_chart_data, Jason.encode!(data.volume_tvl))
+    |> assign(:cashflow_chart_data, Jason.encode!(data.cashflow))
+    |> assign(:volume_table_rows, data.table_rows)
+    |> assign(:bonded_chart_data, Jason.encode!(data.bonded))
+    |> assign(:rewards_chart_data, Jason.encode!(data.rewards))
+    |> assign(:income_chart_data, Jason.encode!(data.income))
+    |> assign(:costs_chart_data, Jason.encode!(data.costs))
+    |> load_projections()
   end
 
   defp load_projections(socket) do
@@ -166,7 +170,7 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
         <.kpi_card label="Annualized Yield" value={@annualized_yield} />
       </div>
 
-      <!-- Valuation Section -->
+      <!-- Valuation Section (mocked) -->
       <div class="valuation-section">
         <div class="valuation-card">
           <h2>Current Valuation</h2>
@@ -193,7 +197,11 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
           <div class="selector-group">
             <label>Growth Factor: <%= :erlang.float_to_binary(@growth_factor, decimals: 1) %></label>
 
-            <.form for={%{growth_factor: @growth_factor}} as={:projection} phx-change="change_growth_factor">
+            <.form
+              for={to_form(%{"growth_factor" => to_string(@growth_factor)}, as: :projection)}
+              id="projection-growth"
+              phx-change="change_growth_factor"
+            >
               <input
                 type="range"
                 min="0.5"
@@ -258,8 +266,62 @@ defmodule ZefyrlabWeb.DashboardLive.Index do
             data-chart={@costs_chart_data}
           ></canvas>
         </.chart_card>
+
+        <.chart_card title="Volume & TVL (Utilization overlay)" id="chart-volume-tvl">
+          <canvas
+            id="canvas-volume-tvl"
+            class="w-full h-80 md:h-96"
+            phx-hook="VolumeTvlChart"
+            data-chart={@volume_tvl_chart_data}
+          ></canvas>
+        </.chart_card>
+
+        <.chart_card title="Revenue vs Costs" id="chart-cashflow">
+          <canvas
+            id="canvas-cashflow"
+            class="w-full h-80 md:h-96"
+            phx-hook="CashflowChart"
+            data-chart={@cashflow_chart_data}
+          ></canvas>
+        </.chart_card>
+      </div>
+
+      <div class="mt-6">
+        <h3 class="text-lg font-semibold mb-2">Recent Network Metrics</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-left border-b">
+                <th class="py-2 pr-4">Bin</th>
+                <th class="py-2 pr-4">Volume</th>
+                <th class="py-2 pr-4">TVL</th>
+                <th class="py-2 pr-4">Utilization</th>
+              </tr>
+            </thead>
+            <tbody>
+              <%= for row <- @volume_table_rows do %>
+                <tr class="border-b last:border-0">
+                  <td class="py-2 pr-4"><%= row.bin %></td>
+                  <td class="py-2 pr-4"><%= format_number(row.volume) %></td>
+                  <td class="py-2 pr-4"><%= format_number(row.tvl) %></td>
+                  <td class="py-2 pr-4"><%= :erlang.float_to_binary(Decimal.to_float(row.utilization_ratio), decimals: 2) %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
     """
+  end
+
+  defp format_number(num) when is_integer(num) do
+    num
+    |> Integer.to_string()
+    |> String.graphemes()
+    |> Enum.reverse()
+    |> Enum.chunk_every(3)
+    |> Enum.join(",")
+    |> String.reverse()
   end
 end
